@@ -9,25 +9,29 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.90.12",
-    "autoprefixer": "^10.4.22",
-    "axios": "^1.13.2",
+    "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.59.0",
+    "autoprefixer": "^10.4.20",
+    "axios": "^1.7.7",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.556.0",
-    "next": "16.0.8",
-    "postcss": "^8.5.6",
-    "react": "19.2.1",
-    "react-dom": "19.2.1",
-    "tailwindcss": "^3.3.6",
-    "zustand": "^5.0.9"
+    "js-cookie": "^3.0.5",
+    "lucide-react": "^0.456.0",
+    "next": "14.2.33",
+    "postcss": "^8.4.47",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tailwindcss": "^3.4.14",
+    "zod": "^4.1.13",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.8",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.33",
     "typescript": "^5"
   }
 }

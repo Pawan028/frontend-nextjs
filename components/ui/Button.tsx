@@ -1,4 +1,4 @@
-// components/ui/Button.tsx
+ // components/ui/Button.tsx
 import React from 'react';
 import clsx from 'clsx';
 
@@ -14,12 +14,12 @@ export default function Button({
   className,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'rounded font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm';
   
   const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
-    danger: 'bg-red-600 text-white hover:bg-red-700',
+    primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800',
+    secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 active:bg-gray-400',
+    danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800',
   };
   
   const sizes = {

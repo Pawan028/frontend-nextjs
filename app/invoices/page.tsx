@@ -1,153 +1,262 @@
- 'use client';
-// app/invoices/page.tsx
+'use client';
+
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
-import { useRequireAuth } from '../../hooks/useAuth';
 import Card from '../../components/ui/Card';
-import { formatCurrency, formatDate } from '../../utils/format';
+import InvoicePreviewModal from '../../components/InvoicePreviewModal';
 
 interface Invoice {
-  id: string;
-  invoice_number: string;
-  invoiceNumber?: string;
-  billing_start: string;
-  billingStart?: string;
-  billing_end: string;
-  billingEnd?: string;
-  total_amount: number;
-  totalAmount?: number;
-  status: string;
-  created_at?: string;
-  createdAt?: string;
-}
-
-interface InvoiceResponse {
-  success: boolean;
-  data?: Invoice[];
+    id: string;
+    invoiceNumber: string;
+    billingStart: string;
+    billingEnd: string;
+    totalAmount: number;
+    paidAmount: number;
+    status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+    paymentMethod: string | null;
+    dueDate: string;
+    paidAt: string | null;
+    createdAt: string;
 }
 
 export default function InvoicesPage() {
-  const token = useRequireAuth();
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
-  const { data: invoices, isLoading, error } = useQuery<Invoice[]>({
-    queryKey: ['invoices'],
-    queryFn: async () => {
-      const res = await api.get<InvoiceResponse | Invoice[]>('/invoices');
-      
-      // Handle backend response format
-      if (res.data && typeof res.data === 'object' && 'success' in res.data) {
-        return (res.data as InvoiceResponse).data || [];
-      }
-      
-      return Array.isArray(res.data) ? res.data : [];
-    },
-    enabled: !!token,
-  });
+    const {
+        data: invoicesData,
+        isLoading,
+        error,
+    } = useQuery({
+        queryKey: ['invoices'],
+        queryFn: async () => {
+            const response = await api.get('/invoices');
+            return response.data;
+        },
+    });
 
-  if (!token) {
+    const invoices: Invoice[] = invoicesData?.data || [];
+
+    // ✅ Download handler using blob approach (keeps auth header)
+    const downloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
+        try {
+            const response = await api.get(`/invoices/${invoiceId}/download`, {
+                responseType: 'blob',
+            });
+
+            const contentType = response.headers['content-type'] || '';
+            if (contentType.includes('application/json')) {
+                const text = await response.data.text();
+                const errorData = JSON.parse(text);
+                alert(errorData?.error?.message || 'Failed to download PDF');
+                return;
+            }
+
+            // Create download link
+            const url = window.URL.createObjectURL(response.data);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `invoice-${invoiceNumber}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err: any) {
+            console.error('Download error:', err);
+            alert(
+                err?.response?.data?.error?.message ||
+                err?.message ||
+                'Failed to download invoice'
+            );
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'PAID':
+                return 'bg-green-100 text-green-800';
+            case 'PENDING':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'OVERDUE':
+                return 'bg-red-100 text-red-800';
+            case 'CANCELLED':
+                return 'bg-gray-100 text-gray-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
+
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Checking authentication...</div>
-      </div>
-    );
-  }
+        <div className="p-6">
+            <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">Invoices</h1>
+                <p className="text-gray-600 mt-1">View and download your billing invoices</p>
+            </div>
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Loading invoices...</div>
-      </div>
-    );
-  }
+            {isLoading && (
+                <Card>
+                    <div className="text-center py-8 text-gray-600">Loading invoices...</div>
+                </Card>
+            )}
 
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          Error loading invoices. Please try again.
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
-        <p className="text-gray-600 mt-1">View and download your billing invoices</p>
-      </div>
-
-      {!invoices || invoices.length === 0 ? (
-        <Card>
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">📄</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No invoices yet</h3>
-            <p className="text-gray-600 mb-4">Invoices will appear here after billing cycles</p>
-            <p className="text-sm text-gray-500">
-              Similar to Shiprocket, invoices are generated monthly for your shipping charges
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {invoices.map((invoice) => (
-            <Card key={invoice.id} className="hover:shadow-lg transition-shadow">
-              <div className="flex justify-between items-center">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {invoice.invoice_number || invoice.invoiceNumber || `INV-${invoice.id.slice(0, 8)}`}
-                    </h3>
-                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      {invoice.status || 'PAID'}
-                    </span>
-                  </div>
-                  
-                  <div className="text-sm text-gray-600">
-                    <span>Billing Period: </span>
-                    <span className="font-medium">
-                      {formatDate(invoice.billing_start || invoice.billingStart || new Date())} 
-                      {' - '}
-                      {formatDate(invoice.billing_end || invoice.billingEnd || new Date())}
-                    </span>
-                  </div>
-                  
-                  {(invoice.created_at || invoice.createdAt) && (
-                    <div className="text-xs text-gray-500 mt-2">
-                      Generated: {formatDate(invoice.created_at || invoice.createdAt || new Date())}
+            {error && (
+                <Card>
+                    <div className="text-center py-8">
+                        <p className="text-red-600 mb-2">Error loading invoices. Please try again.</p>
+                        <p className="text-sm text-gray-600">{String(error)}</p>
                     </div>
-                  )}
-                </div>
+                </Card>
+            )}
 
-                <div className="text-right ml-6">
-                  <div className="text-2xl font-bold text-gray-900 mb-3">
-                    {formatCurrency(invoice.total_amount || invoice.totalAmount || 0)}
-                  </div>
-                  <a
-                    href={`/api/v1/invoices/${invoice.id}/pdf`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded border border-blue-200 transition-colors"
-                  >
-                    📥 Download PDF
-                  </a>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+            {!isLoading && !error && invoices.length === 0 && (
+                <Card>
+                    <div className="text-center py-12">
+                        <div className="text-gray-400 mb-4">
+                            <svg
+                                className="mx-auto h-12 w-12"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices yet</h3>
+                        <p className="text-gray-600">Invoices will appear here after billing cycles</p>
+                        <p className="text-sm text-gray-500 mt-2">
+                            Invoices are generated monthly for your shipping charges
+                        </p>
+                    </div>
+                </Card>
+            )}
 
-      {invoices && invoices.length > 0 && (
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Total: {invoices.length} invoice{invoices.length !== 1 ? 's' : ''}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
-            💡 Like Shiprocket, all invoices are downloadable as PDF
-          </p>
+            {!isLoading && !error && invoices.length > 0 && (
+                <div className="space-y-4">
+                    {invoices.map((invoice) => (
+                        <Card key={invoice.id}>
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="text-lg font-semibold text-gray-800">
+                                            {invoice.invoiceNumber}
+                                        </h3>
+                                        <span
+                                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                                invoice.status
+                                            )}`}
+                                        >
+                      {invoice.status}
+                    </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div>
+                                            <p className="text-gray-600">Billing Period</p>
+                                            <p className="font-medium text-gray-800">
+                                                {new Date(invoice.billingStart).toLocaleDateString()} -{' '}
+                                                {new Date(invoice.billingEnd).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">Amount</p>
+                                            <p className="font-medium text-gray-800">
+                                                ₹{invoice.totalAmount.toFixed(2)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">Due Date</p>
+                                            <p className="font-medium text-gray-800">
+                                                {new Date(invoice.dueDate).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-600">
+                                                {invoice.status === 'PAID' ? 'Paid On' : 'Generated On'}
+                                            </p>
+                                            <p className="font-medium text-gray-800">
+                                                {invoice.paidAt
+                                                    ? new Date(invoice.paidAt).toLocaleDateString()
+                                                    : new Date(invoice.createdAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2 ml-4">
+                                    {/* Preview Button */}
+                                    <button
+                                        onClick={() => setSelectedInvoiceId(invoice.id)}
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
+                                    >
+                                        <svg
+                                            className="w-4 h-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                            />
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                            />
+                                        </svg>
+                                        Preview
+                                    </button>
+
+                                    {/* Download Button */}
+                                    <button
+                                        onClick={() => downloadInvoice(invoice.id, invoice.invoiceNumber)}
+                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded border border-blue-200 transition-colors"
+                                    >
+                                        <svg
+                                            className="w-4 h-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                            />
+                                        </svg>
+                                        Download PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </Card>
+                    ))}
+
+                    {/* Footer */}
+                    <div className="text-center py-4">
+                        <p className="text-sm text-gray-600">
+                            Total: {invoices.length} invoice{invoices.length !== 1 ? 's' : ''}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">💡 All invoices are downloadable as PDF</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Preview Modal */}
+            {selectedInvoiceId && (
+                <InvoicePreviewModal
+                    invoiceId={selectedInvoiceId}
+                    onClose={() => setSelectedInvoiceId(null)}
+                />
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }

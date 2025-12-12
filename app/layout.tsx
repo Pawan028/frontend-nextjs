@@ -1,26 +1,27 @@
-// app/layout.tsx
 import './globals.css';
-import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import Providers from './providers';
 import Navbar from '../components/Navbar';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { TopupModal } from '../components/TopupModal';
 
-export const metadata: Metadata = {
-  title: 'ShipMVP - Shipping Management',
-  description: 'Multi-courier shipping aggregator platform',
+export const metadata = {
+    title: 'ShipMVP - Shipping Management',
+    description: 'Multi-courier shipping aggregator platform',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
+    return (
+        <html lang="en">
+        <body>
         <Providers>
-          <Navbar />
-          <main className="min-h-screen">
-            {children}
-          </main>
+            <ErrorBoundary>
+                <Navbar />
+                <main className="p-4">{children}</main>
+                <TopupModal />
+            </ErrorBoundary>
         </Providers>
-      </body>
-    </html>
-  );
+        </body>
+        </html>
+    );
 }

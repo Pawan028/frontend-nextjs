@@ -1,37 +1,93 @@
 // stores/useAuthStore.ts
 import { create } from 'zustand';
-import { setToken, getToken } from '../lib/auth';
+import Cookies from 'js-cookie';
 
-type User = {
-  id: string;
-  email: string;
-  role?: string;
-  name?: string;
-} | null;
-
-interface AuthState {
-  token: string | null;
-  user: User;
-  setAuth: (token: string, user: User) => void;
-  logout: () => void;
-  isAuthenticated: () => boolean;
+interface User {
+    id: string;
+    email: string;
+    name?: string;
+    role?: string;
+    merchantProfile?: {
+        id: string;
+        companyName: string;
+        walletBalance: number;
+    };
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  token: typeof window !== 'undefined' ? getToken() : null,
-  user: null,
-  
-  setAuth: (token, user) => {
-    setToken(token);
-    set({ token, user });
-  },
-  
-  logout: () => {
-    setToken(null);
-    set({ token: null, user: null });
-  },
-  
-  isAuthenticated: () => {
-    return !!get().token;
-  },
+interface AuthState {
+    token: string | null;
+    user: User | null;
+    isInitialized: boolean;
+    setAuth: (token: string, user: User) => void;
+    updateWalletBalance: (newBalance: number) => void;  // ✅ NEW METHOD
+    logout: () => void;
+    initAuth: () => void;
+}
+
+const COOKIE_OPTIONS = {
+    expires: 7,
+    sameSite: 'strict' as const,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+};
+
+export const useAuthStore = create<AuthState>((set) => ({
+    token: null,
+    user: null,
+    isInitialized: false,
+
+    setAuth: (token: string, user: User) => {
+        Cookies.set('token', token, COOKIE_OPTIONS);
+        Cookies.set('user', JSON.stringify(user), COOKIE_OPTIONS);
+        console.log('✅ Auth stored in cookies');
+        set({ token, user, isInitialized: true });
+    },
+
+    // ✅ NEW: Update wallet balance in store and cookies
+    updateWalletBalance: (newBalance: number) => {
+        set((state) => {
+            if (!state.user?.merchantProfile) return state;
+
+            const updatedUser = {
+                ...state.user,
+                merchantProfile: {
+                    ...state.user.merchantProfile,
+                    walletBalance: newBalance,
+                },
+            };
+
+            // Update cookies with new balance
+            Cookies.set('user', JSON.stringify(updatedUser), COOKIE_OPTIONS);
+            console.log('✅ Wallet balance updated:', newBalance);
+
+            return { user: updatedUser };
+        });
+    },
+
+    logout: () => {
+        Cookies.remove('token', { path: '/' });
+        Cookies.remove('user', { path: '/' });
+        console.log('✅ Logged out - cookies cleared');
+        set({ token: null, user: null });
+    },
+
+    initAuth: () => {
+        const token = Cookies.get('token');
+        const userStr = Cookies.get('user');
+
+        if (token && userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                console.log('✅ Auth restored from cookies');
+                set({ token, user, isInitialized: true });
+            } catch (e) {
+                console.error('❌ Invalid user data in cookies, clearing...');
+                Cookies.remove('token', { path: '/' });
+                Cookies.remove('user', { path: '/' });
+                set({ token: null, user: null, isInitialized: true });
+            }
+        } else {
+            set({ isInitialized: true });
+        }
+    },
 }));
