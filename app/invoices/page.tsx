@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import api from '../../lib/api';
+import api, { showToast } from '../../lib/api';
 import Card from '../../components/ui/Card';
 import InvoicePreviewModal from '../../components/InvoicePreviewModal';
 
@@ -30,8 +30,16 @@ export default function InvoicesPage() {
     } = useQuery({
         queryKey: ['invoices'],
         queryFn: async () => {
-            const response = await api.get('/invoices');
-            return response.data;
+            try {
+                const response = await api.get('/invoices');
+                return response.data;
+            } catch (err: any) {
+                // ✅ FIXED: If 404 (No invoices found), return empty list instead of throwing
+                if (err.response?.status === 404) {
+                    return { success: true, data: [] };
+                }
+                throw err;
+            }
         },
     });
 
@@ -48,7 +56,7 @@ export default function InvoicesPage() {
             if (contentType.includes('application/json')) {
                 const text = await response.data.text();
                 const errorData = JSON.parse(text);
-                alert(errorData?.error?.message || 'Failed to download PDF');
+                showToast(errorData?.error?.message || 'Failed to download PDF', 'error');
                 return;
             }
 
@@ -63,10 +71,11 @@ export default function InvoicesPage() {
             window.URL.revokeObjectURL(url);
         } catch (err: any) {
             console.error('Download error:', err);
-            alert(
+            showToast(
                 err?.response?.data?.error?.message ||
                 err?.message ||
-                'Failed to download invoice'
+                'Failed to download invoice',
+                'error'
             );
         }
     };
@@ -96,15 +105,6 @@ export default function InvoicesPage() {
             {isLoading && (
                 <Card>
                     <div className="text-center py-8 text-gray-600">Loading invoices...</div>
-                </Card>
-            )}
-
-            {error && (
-                <Card>
-                    <div className="text-center py-8">
-                        <p className="text-red-600 mb-2">Error loading invoices. Please try again.</p>
-                        <p className="text-sm text-gray-600">{String(error)}</p>
-                    </div>
                 </Card>
             )}
 

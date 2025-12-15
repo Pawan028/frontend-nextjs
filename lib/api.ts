@@ -3,22 +3,23 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-// Global toast dispatcher (simple alert for now, can be enhanced later)
-const showToast = (message: string, type: 'success' | 'error' = 'error') => {
-    // For now, use alert. Can be replaced with actual toast library
-    if (type === 'error') {
-        alert(`❌ Error: ${message}`);
-    } else {
-        alert(`✅ ${message}`);
-    }
+// Toast notification helper - will dispatch custom events for toast component
+const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'error') => {
+    window.dispatchEvent(
+        new CustomEvent('show-toast', {
+            detail: { message, type },
+        })
+    );
 };
 
+// If the ENV var already ends with /v1, don't add it again.
+const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/v1';
+const finalUrl = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
+
 const api = axios.create({
-    baseURL: '/api/v1',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    timeout: 30000, // 30 second timeout
+    baseURL: finalUrl,
+    headers: { 'Content-Type': 'application/json' },
+    timeout: 30000,
 });
 
 
@@ -94,8 +95,11 @@ api.interceptors.response.use(
             );
         }
 
+        // Network error handling
         if (!navigator.onLine) {
             showToast('Network error. Please check your internet connection.', 'error');
+        } else if (!error.response) {
+            showToast('Cannot connect to server. Please try again later.', 'error');
         }
 
         // Return error for caller to handle
@@ -103,4 +107,6 @@ api.interceptors.response.use(
     }
 );
 
+// Export toast helper for use in components
+export { showToast };
 export default api;

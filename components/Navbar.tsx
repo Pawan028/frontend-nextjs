@@ -64,10 +64,28 @@ export default function Navbar() {
                   Orders
                 </Link>
                 <Link 
+                  href="/ndr" 
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                >
+                  NDR
+                </Link>
+                <Link 
                   href="/invoices" 
                   className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                 >
                   Invoices
+                </Link>
+                <Link 
+                  href="/wallet" 
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                >
+                  Wallet
+                </Link>
+                <Link 
+                  href="/settings/addresses" 
+                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                >
+                  Settings
                 </Link>
               </>
             )}
@@ -76,9 +94,14 @@ export default function Navbar() {
           {/* Right side - User & Auth */}
           <div className="flex items-center gap-4">
             {token && user && (
-              <span className="text-sm text-gray-600">
-                {user.name || user.email}
-              </span>
+              <div className="text-sm">
+                <div className="text-gray-900 font-medium">{user.name || user.email}</div>
+                {user.merchantProfile && (
+                  <div className="text-gray-600 text-xs">
+                    Balance: ₹{user.merchantProfile.walletBalance.toFixed(2)}
+                  </div>
+                )}
+              </div>
             )}
             
             {token ? (

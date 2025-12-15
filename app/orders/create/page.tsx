@@ -2,7 +2,8 @@
 //app/order/create/page.tsx
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../../../stores/useAuthStore';
 import api from '../../../lib/api';
 import Card from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
@@ -46,10 +47,12 @@ interface CreateOrderPayload {
         name: string;
         price: number;
         quantity: number;
+        sku?: string;
     }>;
     weight: number;
     invoice_amount: number;
-    payment_type: 'PREPAID' | 'COD';
+    payment_type: 'prepaid' | 'cod';
+    cod_amount?: number;
     dimensions: {
         length: number;
         breadth: number;
@@ -59,6 +62,8 @@ interface CreateOrderPayload {
 
 export default function CreateOrderPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
+    const updateWalletBalance = useAuthStore((s) => s.updateWalletBalance);
 
     // Fetch merchant addresses
     const {
@@ -74,7 +79,11 @@ export default function CreateOrderPage() {
         },
     });
 
-    const addresses: MerchantAddress[] = addressesResponse?.data || [];
+    // ✅ CRITICAL FIX: Filter only PICKUP type addresses - backend validates this!
+    const allAddresses: MerchantAddress[] = addressesResponse?.data || [];
+    const addresses = allAddresses.filter((addr: any) => 
+        addr.type === 'PICKUP' || addr.type === 'WAREHOUSE'
+    );
 
     // Form state
     const [pickupAddressId, setPickupAddressId] = useState('');
@@ -88,7 +97,8 @@ export default function CreateOrderPage() {
     const [state, setState] = useState('');
     const [productName, setProductName] = useState('');
     const [productPrice, setProductPrice] = useState('500');
-    const [paymentType, setPaymentType] = useState<'PREPAID' | 'COD'>('PREPAID');
+    const [sku, setSku] = useState('');
+    const [paymentType, setPaymentType] = useState<'prepaid' | 'cod'>('prepaid');
 
     // Rates state
     const [rates, setRates] = useState<RateOption[]>([]);
@@ -107,7 +117,8 @@ export default function CreateOrderPage() {
 
     // Validation functions
     const validatePincode = (pincode: string): boolean => {
-        return /^\d{6}$/.test(pincode);
+        // Backend pattern: ^[1-9][0-9]{5}$ (6 digits, first digit 1-9)
+        return /^[1-9][0-9]{5}$/.test(pincode);
     };
 
     const validatePhone = (phone: string): boolean => {
@@ -164,6 +175,8 @@ export default function CreateOrderPage() {
             errors.productName = 'Product name is required';
         }
 
+        // SKU is optional - backend doesn't require it
+
         if (!productPrice || Number(productPrice) <= 0) {
             errors.productPrice = 'Valid product price is required';
         }
@@ -212,7 +225,8 @@ export default function CreateOrderPage() {
                 originPincode: selectedAddress.pincode,
                 destPincode,
                 weight: Number(weight),
-                paymentType: paymentType.toLowerCase(),
+                // ✅ FIXED: Send lowercase to match validation schema
+                paymentType: paymentType.toLowerCase(), 
                 dimensions: {
                     length: 10,
                     breadth: 10,
@@ -267,11 +281,15 @@ export default function CreateOrderPage() {
                     name: productName,
                     price: Number(productPrice),
                     quantity: 1,
+                    ...(sku && { sku: sku }),
                 },
             ],
             weight: Number(weight),
             invoice_amount: Number(productPrice),
-            payment_type: paymentType,
+            // ✅ FIXED: Send lowercase to match validation schema
+            payment_type: paymentType.toLowerCase() as 'prepaid' | 'cod',
+            // ✅ Add cod_amount when payment type is COD
+            cod_amount: paymentType.toLowerCase() === 'cod' ? Number(productPrice) : 0,
             dimensions: {
                 length: 10,
                 breadth: 10,
@@ -280,15 +298,50 @@ export default function CreateOrderPage() {
         };
 
         try {
-            await api.post('/orders', payload);
+            console.log('📦 Order Payload:', JSON.stringify(payload, null, 2));
+            const response = await api.post('/orders', payload);
+            console.log('✅ Order Response:', response.data);
+            
+            // ✅ PRODUCTION FIX: Update wallet balance after order creation
+            // Fetch fresh merchant data to get updated balance
+            try {
+                const meResponse = await api.get('/auth/me');
+                const newBalance = meResponse.data?.merchant?.walletBalance;
+                if (newBalance !== undefined) {
+                    updateWalletBalance(newBalance);
+                    console.log('💰 Updated wallet balance:', newBalance);
+                }
+            } catch (balanceError) {
+                console.warn('⚠️ Failed to update wallet balance:', balanceError);
+            }
+            
+            // ✅ Invalidate all wallet and order queries to refetch fresh data
+            queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            
             router.push('/orders');
         } catch (err: any) {
             console.error('Create order error:', err);
-            setError(
-                err.response?.data?.error?.message ||
-                err.response?.data?.message ||
-                'Failed to create order. Please try again.'
-            );
+            console.error('❌ Error response:', JSON.stringify(err.response?.data, null, 2));
+            console.error('❌ Error message:', err.response?.data?.error?.message);
+            console.error('❌ Error code:', err.response?.data?.error?.code);
+            console.error('❌ Error details:', err.response?.data?.error?.details);
+            
+            // Show detailed validation errors if available
+            const errorDetails = err.response?.data?.error?.details || err.response?.data?.details;
+            const errorMessage = err.response?.data?.error?.message || err.response?.data?.message;
+            
+            if (errorDetails) {
+                setError(`Validation Error: ${JSON.stringify(errorDetails)}`);
+            } else if (err.response?.data?.error?.code === 'INTERNAL_ERROR') {
+                setError('⚠️ Server Error: Failed to create order. This may be due to insufficient wallet balance, backend service issues, or duplicate order. Please check your wallet balance and try again, or contact support if the issue persists.');
+            } else if (errorMessage) {
+                setError(errorMessage);
+            } else {
+                setError('Failed to create order. Please check all fields and try again.');
+            }
         } finally {
             setCreatingOrder(false);
         }
@@ -335,10 +388,11 @@ export default function CreateOrderPage() {
                     <div className="text-center py-12">
                         <div className="text-6xl mb-4">📍</div>
                         <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                            No Pickup Addresses Found
+                            No Pickup/Warehouse Addresses Found
                         </h3>
                         <p className="text-gray-600 mb-6">
-                            You need to add at least one pickup address before creating orders.
+                            You need to add at least one PICKUP or WAREHOUSE type address before creating orders. 
+                            {allAddresses.length > 0 && ` (Found ${allAddresses.length} address(es), but none are PICKUP/WAREHOUSE type)`}
                         </p>
                         <Button onClick={() => router.push('/settings/addresses')}>
                             Add Pickup Address
@@ -414,7 +468,7 @@ export default function CreateOrderPage() {
                             error={validationErrors.destPincode}
                         />
                         {destPincode && !validatePincode(destPincode) && (
-                            <p className="text-yellow-600 text-xs mt-1">Must be exactly 6 digits</p>
+                            <p className="text-yellow-600 text-xs mt-1">Must be 6 digits (cannot start with 0)</p>
                         )}
                     </div>
 
@@ -441,11 +495,11 @@ export default function CreateOrderPage() {
                         </label>
                         <select
                             value={paymentType}
-                            onChange={(e) => setPaymentType(e.target.value as 'PREPAID' | 'COD')}
+                            onChange={(e) => setPaymentType(e.target.value as 'prepaid' | 'cod')}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                            <option value="PREPAID">Prepaid</option>
-                            <option value="COD">Cash on Delivery (COD)</option>
+                            <option value="prepaid">Prepaid</option>
+                            <option value="cod">Cash on Delivery (COD)</option>
                         </select>
                     </div>
 
@@ -585,6 +639,18 @@ export default function CreateOrderPage() {
                         }}
                         placeholder="e.g., Laptop Charger"
                         error={validationErrors.productName}
+                    />
+
+                    <Input
+                        label="SKU (Optional)"
+                        type="text"
+                        value={sku}
+                        onChange={(e) => {
+                            setSku(e.target.value);
+                            setValidationErrors((prev) => ({ ...prev, sku: '' }));
+                        }}
+                        placeholder="e.g., LTCHRGR-001"
+                        error={validationErrors.sku}
                     />
 
                     <Input

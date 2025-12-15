@@ -29,10 +29,26 @@ interface WalletResponse {
 
 export default function WalletPage() {
     const user = useAuthStore((s) => s.user);
-    const walletBalance = user?.merchantProfile?.walletBalance || 0;
-    const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);  // ✅ NEW STATE
+    const updateWalletBalance = useAuthStore((s) => s.updateWalletBalance);
+    const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
 
-    const { data: response, isLoading } = useQuery<WalletResponse>({
+    // ✅ PRODUCTION FIX: Fetch live balance from API for accuracy
+    const { data: balanceResponse, isLoading: balanceLoading } = useQuery({
+        queryKey: ['wallet-balance'],
+        queryFn: async () => {
+            const res = await api.get('/wallet/balance');
+            // Update Zustand store with fresh balance
+            const balance = res.data?.data?.balance;
+            if (balance !== undefined) {
+                updateWalletBalance(balance);
+            }
+            return res.data;
+        },
+        staleTime: 0, // Always fetch fresh data
+        refetchOnWindowFocus: true, // Refetch when user returns to tab
+    });
+
+    const { data: transactionsResponse, isLoading: transactionsLoading } = useQuery<WalletResponse>({
         queryKey: ['wallet-transactions'],
         queryFn: async () => {
             const res = await api.get('/wallet/transactions');
@@ -40,7 +56,9 @@ export default function WalletPage() {
         },
     });
 
-    const transactions = response?.data?.transactions || [];
+    const walletBalance = balanceResponse?.data?.balance ?? user?.merchantProfile?.walletBalance ?? 0;
+    const transactions = transactionsResponse?.data?.transactions || [];
+    const isLoading = balanceLoading || transactionsLoading;
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">

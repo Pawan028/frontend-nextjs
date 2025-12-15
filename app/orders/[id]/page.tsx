@@ -1,8 +1,9 @@
 'use client';
 //app/orders/[id]/page.tsx
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import api from '../../../lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api, { showToast } from '../../../lib/api';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import { formatCurrency, formatDate, getStatusColor } from '../../../utils/format';
@@ -13,6 +14,85 @@ interface TrackingEvent {
     location: string | null;
     remarks: string | null;
     timestamp: string;
+}
+
+// Cancel Order Button Component
+function CancelOrderButton({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [reason, setReason] = useState('');
+    const queryClient = useQueryClient();
+    const router = useRouter();
+
+    const cancelMutation = useMutation({
+        mutationFn: async () => {
+            const res = await api.post(`/orders/${orderId}/cancel`, {
+                reason: reason || 'Cancelled by merchant',
+            });
+            return res.data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+            queryClient.invalidateQueries({ queryKey: ['orders'] });
+            showToast('Order cancelled successfully. Amount refunded to wallet.', 'success');
+            setShowConfirm(false);
+            setTimeout(() => router.push('/orders'), 1500);
+        },
+        onError: (err: any) => {
+            showToast(err.response?.data?.error?.message || 'Failed to cancel order', 'error');
+        },
+    });
+
+    if (!showConfirm) {
+        return (
+            <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowConfirm(true)}
+                className="bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+            >
+                Cancel Order
+            </Button>
+        );
+    }
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Cancel Order?</h3>
+                <p className="text-gray-600 mb-4">
+                    Are you sure you want to cancel order <strong>{orderNumber}</strong>?
+                </p>
+                <p className="text-sm text-gray-600 mb-4">
+                    For prepaid orders, the shipping charges will be automatically refunded to your wallet.
+                </p>
+                
+                <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Reason for cancellation (optional)"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 text-sm"
+                    rows={3}
+                />
+
+                <div className="flex gap-3">
+                    <Button
+                        onClick={() => cancelMutation.mutate()}
+                        disabled={cancelMutation.isPending}
+                        className="flex-1 bg-red-600 hover:bg-red-700"
+                    >
+                        {cancelMutation.isPending ? 'Cancelling...' : 'Yes, Cancel Order'}
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        onClick={() => setShowConfirm(false)}
+                        className="flex-1"
+                    >
+                        No, Keep Order
+                    </Button>
+                </div>
+            </Card>
+        </div>
+    );
 }
 
 interface OrderDetail {
@@ -109,9 +189,15 @@ export default function OrderDetailPage() {
                     <h1 className="text-3xl font-bold text-gray-900 mt-3">{order.orderNumber}</h1>
                     <p className="text-gray-600 mt-1">Order Details & Tracking</p>
                 </div>
-                <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-          {order.status}
-        </span>
+                <div className="flex items-center gap-3">
+                    <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+                        {order.status}
+                    </span>
+                    {/* Cancel Order Button - only show for cancellable statuses */}
+                    {['CREATED', 'READY_TO_SHIP', 'MANIFESTED'].includes(order.status) && (
+                        <CancelOrderButton orderId={order.id} orderNumber={order.orderNumber} />
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

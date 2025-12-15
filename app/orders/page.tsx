@@ -1,5 +1,6 @@
  'use client';
 // app/orders/page.tsx
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../lib/api';
 import Card from '../../components/ui/Card';
@@ -32,13 +33,31 @@ interface Order {
 interface OrdersResponse {
   success: boolean;
   data: Order[];
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
 }
 
 export default function OrdersPage() {
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const limit = 20;
+
   const { data: response, isLoading, error } = useQuery<OrdersResponse>({
-    queryKey: ['orders'],
+    queryKey: ['orders', page, statusFilter, searchQuery],
     queryFn: async () => {
-      const res = await api.get<OrdersResponse>('/orders');
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...(statusFilter && { status: statusFilter }),
+        ...(searchQuery && { search: searchQuery }),
+      });
+      const res = await api.get<OrdersResponse>(`/orders?${params}`);
       return res.data;
     },
   });
@@ -70,6 +89,20 @@ export default function OrdersPage() {
   }
 
   const orders = response?.data || [];
+  const pagination = response?.pagination;
+
+  const statusOptions = [
+    { value: '', label: 'All Statuses' },
+    { value: 'CREATED', label: 'Created' },
+    { value: 'READY_TO_SHIP', label: 'Ready to Ship' },
+    { value: 'MANIFESTED', label: 'Manifested' },
+    { value: 'PICKED_UP', label: 'Picked Up' },
+    { value: 'IN_TRANSIT', label: 'In Transit' },
+    { value: 'OUT_FOR_DELIVERY', label: 'Out for Delivery' },
+    { value: 'DELIVERED', label: 'Delivered' },
+    { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'RTO_INITIATED', label: 'RTO Initiated' },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -82,6 +115,40 @@ export default function OrdersPage() {
           <Button>+ Create Order</Button>
         </Link>
       </div>
+
+      {/* Filters */}
+      <Card className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <input
+              type="text"
+              placeholder="Search by order number or AWB..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(1); // Reset to first page on search
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setPage(1); // Reset to first page on filter change
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {statusOptions.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </Card>
 
       {orders.length === 0 ? (
         <Card>
@@ -183,10 +250,33 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {orders.length > 0 && (
-        <div className="mt-6 text-center text-sm text-gray-600">
-          Showing {orders.length} order{orders.length !== 1 ? 's' : ''}
-        </div>
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <Card className="mt-6">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Showing {orders.length} of {pagination.total} orders (Page {pagination.page} of {pagination.totalPages})
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1 || isLoading}
+              >
+                ← Previous
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setPage(p => p + 1)}
+                disabled={!pagination.hasMore || isLoading}
+              >
+                Next →
+              </Button>
+            </div>
+          </div>
+        </Card>
       )}
     </div>
   );

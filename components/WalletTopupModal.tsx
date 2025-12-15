@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../lib/api';
+import api, { showToast } from '../lib/api';
 import Button from './ui/Button';
 import Input from './ui/Input';
-import { useAuthStore } from '../stores/useAuthStore';  // ✅ ADD THIS
+import { useAuthStore } from '../stores/useAuthStore';
 
 interface WalletTopupModalProps {
     isOpen: boolean;
@@ -21,39 +21,50 @@ export default function WalletTopupModal({ isOpen, onClose, currentBalance }: Wa
 
     const topupMutation = useMutation({
         mutationFn: async (amount: number) => {
+            // ✅ LIVE: Backend implemented POST /v1/wallet/topup (Phase 1)
+            // Requires amount and reference object (type, id, description)
+            // Returns: newBalance, transaction info, fully auth-protected
+            
             const response = await api.post('/wallet/topup', {
                 amount,
                 reference: {
                     type: 'manual',
                     id: `TOPUP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    description: `Wallet top-up of ₹${amount.toFixed(2)} via merchant portal`,
-                },
+                    description: 'User initiated wallet top-up'
+                }
             });
             return response.data;
         },
         onSuccess: (data) => {
-            // ✅ UPDATE ZUSTAND STORE WITH NEW BALANCE
-            const newBalance = data.data?.newBalance;
+            // ✅ INSTANT UPDATE: Update Zustand store immediately with new balance
+            const newBalance = data?.data?.newBalance || data?.newBalance;
             if (newBalance !== undefined) {
                 updateWalletBalance(newBalance);
             }
 
-            // Invalidate wallet queries to refetch transactions
+            // ✅ PRODUCTION FIX: Invalidate queries in background (non-blocking)
             queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
+            queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
-            // Show success message
-            alert(`✅ Top-up successful! New balance: ₹${newBalance}`);
+            // Show success toast with new balance
+            showToast(`✅ Wallet topped up! New balance: ₹${newBalance?.toFixed(2)}`, 'success');
 
-            // Reset form and close
+            // Reset form and close immediately (don't wait for refetch)
             setAmount('');
             setError('');
             onClose();
         },
-        onError: (err: any) => {
+        onError: (err: any, variables) => {
             console.error('❌ Top-up error:', err.response?.data);
+            
+            // ✅ ROLLBACK: Revert optimistic update on error
+            const rollbackBalance = currentBalance; // Original balance before optimistic update
+            updateWalletBalance(rollbackBalance);
+            
             const errorMsg = err.response?.data?.error?.message || 'Top-up failed. Please try again.';
             setError(errorMsg);
+            showToast(`❌ ${errorMsg}`, 'error');
         },
     });
 
@@ -78,6 +89,16 @@ export default function WalletTopupModal({ isOpen, onClose, currentBalance }: Wa
             setError('Maximum top-up amount is ₹1,00,000');
             return;
         }
+
+        // ✅ OPTIMISTIC UPDATE: Show new balance immediately before API call
+        const optimisticNewBalance = currentBalance + amountNum;
+        updateWalletBalance(optimisticNewBalance);
+        
+        // Close modal immediately for instant feedback
+        onClose();
+        
+        // Show optimistic toast
+        showToast(`💰 Adding ₹${amountNum.toFixed(2)} to wallet...`, 'info');
 
         topupMutation.mutate(amountNum);
     };
