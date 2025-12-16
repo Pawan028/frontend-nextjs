@@ -25,6 +25,7 @@ export default function InvoicesPage() {
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
     const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
     const [processingInvoiceId, setProcessingInvoiceId] = useState<string | null>(null);
+    const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
 
     const {
         data: invoicesData,
@@ -48,11 +49,15 @@ export default function InvoicesPage() {
 
     const invoices: Invoice[] = invoicesData?.data || [];
 
-    // ✅ Download handler using blob approach (keeps auth header)
+    // ✅ Download handler with loading state and PDF generation support
     const downloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
+        setDownloadingInvoiceId(invoiceId);
+        showToast('Preparing invoice PDF...', 'info');
+
         try {
             const response = await api.get(`/invoices/${invoiceId}/download`, {
                 responseType: 'blob',
+                timeout: 30000, // 30 second timeout for PDF generation
             });
 
             const contentType = response.headers['content-type'] || '';
@@ -60,6 +65,7 @@ export default function InvoicesPage() {
                 const text = await response.data.text();
                 const errorData = JSON.parse(text);
                 showToast(errorData?.error?.message || 'Failed to download PDF', 'error');
+                setDownloadingInvoiceId(null);
                 return;
             }
 
@@ -72,6 +78,8 @@ export default function InvoicesPage() {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
+
+            showToast('Invoice PDF downloaded successfully!', 'success');
         } catch (err: any) {
             console.error('Download error:', err);
             showToast(
@@ -80,6 +88,8 @@ export default function InvoicesPage() {
                 'Failed to download invoice',
                 'error'
             );
+        } finally {
+            setDownloadingInvoiceId(null);
         }
     };
 
@@ -249,22 +259,36 @@ export default function InvoicesPage() {
                                     {/* Download Button */}
                                     <button
                                         onClick={() => downloadInvoice(invoice.id, invoice.invoiceNumber)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded border border-blue-200 transition-colors"
+                                        disabled={downloadingInvoiceId === invoice.id}
+                                        className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded border transition-colors ${
+                                            downloadingInvoiceId === invoice.id
+                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                                : 'text-blue-600 hover:bg-blue-50 border-blue-200'
+                                        }`}
                                     >
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                                            />
-                                        </svg>
-                                        Download PDF
+                                        {downloadingInvoiceId === invoice.id ? (
+                                            <>
+                                                <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></span>
+                                                <span>Generating...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg
+                                                    className="w-4 h-4"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                                    />
+                                                </svg>
+                                                <span>Download PDF</span>
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
