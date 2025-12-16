@@ -8,7 +8,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { useAuthStore } from '../../stores/useAuthStore';
-import WalletTopupModal from '../../components/WalletTopupModal';  // ✅ NEW IMPORT
+import PaymentIntentModal from '../../components/PaymentIntentModal';  // ✅ NEW: Payment Intent Modal
 
 interface Transaction {
     id: string;
@@ -31,6 +31,7 @@ export default function WalletPage() {
     const user = useAuthStore((s) => s.user);
     const updateWalletBalance = useAuthStore((s) => s.updateWalletBalance);
     const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
+    const [topupAmount, setTopupAmount] = useState(1000); // Default amount
 
     // ✅ PRODUCTION FIX: Fetch live balance from API for accuracy
     const { data: balanceResponse, isLoading: balanceLoading } = useQuery({
@@ -75,13 +76,25 @@ export default function WalletPage() {
                         <p className="text-blue-100 text-sm mb-1">Available Balance</p>
                         <h2 className="text-4xl font-bold">{formatCurrency(walletBalance)}</h2>
                     </div>
-                    <button
-                        onClick={() => setIsTopupModalOpen(true)}
-                        className="bg-white text-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2 sm:px-6 sm:py-3 font-semibold shadow-lg transition-all hover:scale-105 flex items-center gap-2"
-                    >
-                        <span className="text-2xl">💰</span>
-                        <span className="hidden sm:inline">Top Up Wallet</span>
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <input
+                            type="number"
+                            value={topupAmount}
+                            onChange={(e) => setTopupAmount(Number(e.target.value))}
+                            min="100"
+                            max="100000"
+                            step="100"
+                            className="hidden sm:block w-32 px-3 py-2 bg-white/90 backdrop-blur-sm text-blue-900 font-semibold rounded-lg border-2 border-white/50 focus:border-white focus:outline-none"
+                            placeholder="Amount"
+                        />
+                        <button
+                            onClick={() => setIsTopupModalOpen(true)}
+                            className="bg-white text-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2 sm:px-6 sm:py-3 font-semibold shadow-lg transition-all hover:scale-105 flex items-center gap-2"
+                        >
+                            <span className="text-2xl">💰</span>
+                            <span className="hidden sm:inline">Top Up Wallet</span>
+                        </button>
+                    </div>
                 </div>
             </Card>
 
@@ -146,12 +159,20 @@ export default function WalletPage() {
                 )}
             </Card>
 
-            {/* ✅ NEW: Top-up Modal */}
-            <WalletTopupModal
-                isOpen={isTopupModalOpen}
-                onClose={() => setIsTopupModalOpen(false)}
-                currentBalance={walletBalance}
-            />
+            {/* ✅ Payment Intent Modal */}
+            {isTopupModalOpen && (
+                <PaymentIntentModal
+                    isOpen={isTopupModalOpen}
+                    onClose={() => setIsTopupModalOpen(false)}
+                    amount={topupAmount}
+                    type="WALLET_TOPUP"
+                    description={`Wallet top-up of ₹${topupAmount}`}
+                    onSuccess={() => {
+                        // Refetch wallet data after successful payment
+                        updateWalletBalance(walletBalance + topupAmount);
+                    }}
+                />
+            )}
         </div>
     );
 }

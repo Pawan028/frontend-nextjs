@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import api, { showToast } from '../../lib/api';
 import Card from '../../components/ui/Card';
 import InvoicePreviewModal from '../../components/InvoicePreviewModal';
+import PaymentIntentModal from '../../components/PaymentIntentModal';
 
 interface Invoice {
     id: string;
@@ -22,6 +23,8 @@ interface Invoice {
 
 export default function InvoicesPage() {
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+    const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+    const [processingInvoiceId, setProcessingInvoiceId] = useState<string | null>(null);
 
     const {
         data: invoicesData,
@@ -188,6 +191,34 @@ export default function InvoicesPage() {
                                 </div>
 
                                 <div className="flex gap-2 ml-4">
+                                    {/* Pay Invoice Button - Only show if PENDING or OVERDUE */}
+                                    {(invoice.status === 'PENDING' || invoice.status === 'OVERDUE') && (
+                                        <button
+                                            onClick={() => {
+                                                setProcessingInvoiceId(invoice.id);
+                                                setPaymentInvoice(invoice);
+                                            }}
+                                            disabled={processingInvoiceId === invoice.id || !!paymentInvoice}
+                                            className={`inline-flex items-center gap-2 px-4 py-2 text-sm text-white rounded shadow-md transition-all font-semibold ${
+                                                processingInvoiceId === invoice.id || paymentInvoice
+                                                    ? 'bg-gray-400 cursor-not-allowed'
+                                                    : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:scale-105'
+                                            }`}
+                                        >
+                                            {processingInvoiceId === invoice.id ? (
+                                                <>
+                                                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                                                    <span>Processing...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>💳</span>
+                                                    <span>Pay Invoice</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+
                                     {/* Preview Button */}
                                     <button
                                         onClick={() => setSelectedInvoiceId(invoice.id)}
@@ -245,16 +276,35 @@ export default function InvoicesPage() {
                         <p className="text-sm text-gray-600">
                             Total: {invoices.length} invoice{invoices.length !== 1 ? 's' : ''}
                         </p>
-                        <p className="text-xs text-gray-500 mt-2">💡 All invoices are downloadable as PDF</p>
-                    </div>
-                </div>
-            )}
-
-            {/* Preview Modal */}
-            {selectedInvoiceId && (
+                        <p classNam{
+                        setPaymentInvoice(null);
+                        setProcessingInvoiceId(null);
+                    }}
+                    amount={paymentInvoice.totalAmount}
+                    type="INVOICE_PAYMENT"
+                    invoiceId={paymentInvoice.id}
+                    description={`Payment for invoice ${paymentInvoice.invoiceNumber}`}
+                    onSuccess={() => {
+                        setPaymentInvoice(null);
+                        setProcessingInvoiceId
                 <InvoicePreviewModal
                     invoiceId={selectedInvoiceId}
                     onClose={() => setSelectedInvoiceId(null)}
+                />
+            )}
+
+            {/* Payment Intent Modal */}
+            {paymentInvoice && (
+                <PaymentIntentModal
+                    isOpen={true}
+                    onClose={() => setPaymentInvoice(null)}
+                    amount={paymentInvoice.totalAmount}
+                    type="INVOICE_PAYMENT"
+                    invoiceId={paymentInvoice.id}
+                    description={`Payment for invoice ${paymentInvoice.invoiceNumber}`}
+                    onSuccess={() => {
+                        setPaymentInvoice(null);
+                    }}
                 />
             )}
         </div>

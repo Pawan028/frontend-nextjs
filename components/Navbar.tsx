@@ -87,6 +87,17 @@ export default function Navbar() {
                 >
                   Settings
                 </Link>
+                
+                {/* Admin Link - Only show for admin users */}
+                {user?.role === 'ADMIN' && (
+                  <Link 
+                    href="/admin/invoices" 
+                    className="text-purple-600 hover:text-purple-700 font-semibold transition-colors flex items-center gap-1"
+                  >
+                    <span>👑</span>
+                    <span>Admin</span>
+                  </Link>
+                )}
               </>
             )}
           </div>
