@@ -2,10 +2,20 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import api from '../../lib/api';
 import Card from '../../components/ui/Card';
+import EmptyState from '../../components/EmptyState';
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { formatCurrency } from '../../utils/format';
 import type { DashboardResponse } from '../../types/dashboard';
+
+// Dynamic import for chart (prevents SSR issues with recharts)
+const OrdersChart = dynamic(() => import('../../components/charts/OrdersChart'), { 
+  ssr: false,
+  loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-xl"></div>
+});
 
 export default function DashboardPage() {
     const { data, isLoading, error, isFetching } = useQuery<DashboardResponse>({
@@ -131,15 +141,7 @@ export default function DashboardPage() {
     if (isLoading && !data) {
         return (
             <div className="max-w-7xl mx-auto px-4 py-8">
-                <div className="animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-96 mb-8"></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="h-32 bg-gray-200 rounded"></div>
-                        ))}
-                    </div>
-                </div>
+                <DashboardSkeleton />
             </div>
         );
     }
@@ -172,7 +174,12 @@ export default function DashboardPage() {
     const { merchant, stats, recentActivity } = data.data;
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="max-w-7xl mx-auto px-4 py-8"
+        >
             {/* Header */}
             <div className="mb-8 flex items-center justify-between">
                 <div>
@@ -190,6 +197,42 @@ export default function DashboardPage() {
                         Updating...
                     </div>
                 )}
+            </div>
+
+            {/* Quick Actions Bar */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-4 mb-8 text-white">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-lg font-semibold">Quick Actions</h2>
+                        <p className="text-blue-100 text-sm">Get things done faster</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <Link 
+                            href="/orders/create" 
+                            className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors text-sm"
+                        >
+                            📦 Create Order
+                        </Link>
+                        <Link 
+                            href="/orders/pickup" 
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-400 transition-colors text-sm"
+                        >
+                            🚚 Schedule Pickup
+                        </Link>
+                        <Link 
+                            href="/dashboard/rates" 
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-400 transition-colors text-sm"
+                        >
+                            💰 Check Rates
+                        </Link>
+                        <Link 
+                            href="/wallet" 
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-400 transition-colors text-sm"
+                        >
+                            💳 Top Up Wallet
+                        </Link>
+                    </div>
+                </div>
             </div>
 
             {/* Primary Stats Cards */}
@@ -239,24 +282,119 @@ export default function DashboardPage() {
                 </Card>
             </div>
 
-            {/* Order Status Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <Card className="text-center">
-                    <div className="text-3xl font-bold text-yellow-600">{stats.orders.inTransit}</div>
-                    <div className="text-sm text-gray-600 mt-1">In Transit</div>
+            {/* Alert Banners */}
+            <div className="space-y-3 mb-8">
+                {/* Low wallet balance warning */}
+                {stats.wallet.balance < 500 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">⚠️</span>
+                            <div>
+                                <p className="font-medium text-yellow-800">Low Wallet Balance</p>
+                                <p className="text-sm text-yellow-700">Add funds to avoid order failures</p>
+                            </div>
+                        </div>
+                        <Link href="/wallet" className="bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-700">
+                            Top Up Now
+                        </Link>
+                    </div>
+                )}
+
+                {/* Unpaid invoices alert */}
+                {stats.invoices.unpaid > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">📄</span>
+                            <div>
+                                <p className="font-medium text-red-800">{stats.invoices.unpaid} Unpaid Invoice{stats.invoices.unpaid > 1 ? 's' : ''}</p>
+                                <p className="text-sm text-red-700">Total due: {formatCurrency(stats.invoices.totalUnpaidAmount)}</p>
+                            </div>
+                        </div>
+                        <Link href="/invoices" className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700">
+                            View Invoices
+                        </Link>
+                    </div>
+                )}
+
+                {/* Pending orders reminder */}
+                {stats.orders.pending > 5 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">📦</span>
+                            <div>
+                                <p className="font-medium text-blue-800">{stats.orders.pending} Orders Pending</p>
+                                <p className="text-sm text-blue-700">Schedule a pickup to ship these orders</p>
+                            </div>
+                        </div>
+                        <Link href="/orders/pickup" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                            Schedule Pickup
+                        </Link>
+                    </div>
+                )}
+            </div>
+
+            {/* Orders Chart & Status Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                {/* Chart Section */}
+                <Card className="lg:col-span-2">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-900">Order Trends</h3>
+                            <p className="text-sm text-gray-500">Last 7 days performance</p>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span className="text-gray-600">Orders</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span className="text-gray-600">Delivered</span>
+                            </div>
+                        </div>
+                    </div>
+                    <OrdersChart />
                 </Card>
-                <Card className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">{stats.orders.pending}</div>
-                    <div className="text-sm text-gray-600 mt-1">Pending</div>
-                </Card>
-                <Card className="text-center">
-                    <div className="text-3xl font-bold text-red-600">{stats.orders.cancelled}</div>
-                    <div className="text-sm text-gray-600 mt-1">Cancelled</div>
-                </Card>
-                <Card className="text-center">
-                    <div className="text-3xl font-bold text-orange-600">{stats.orders.rto}</div>
-                    <div className="text-sm text-gray-600 mt-1">RTO</div>
-                </Card>
+
+                {/* Order Status Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                    <Card className="text-center card-hover">
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <div className="text-3xl font-bold text-yellow-600">{stats.orders.inTransit}</div>
+                        <div className="text-sm text-gray-600 mt-1">In Transit</div>
+                    </Card>
+                    <Card className="text-center card-hover">
+                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div className="text-3xl font-bold text-blue-600">{stats.orders.pending}</div>
+                        <div className="text-sm text-gray-600 mt-1">Pending</div>
+                    </Card>
+                    <Card className="text-center card-hover">
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <div className="text-3xl font-bold text-red-600">{stats.orders.cancelled}</div>
+                        <div className="text-sm text-gray-600 mt-1">Cancelled</div>
+                    </Card>
+                    <Card className="text-center card-hover">
+                        <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            </svg>
+                        </div>
+                        <div className="text-3xl font-bold text-orange-600">{stats.orders.rto}</div>
+                        <div className="text-sm text-gray-600 mt-1">RTO</div>
+                    </Card>
+                </div>
             </div>
 
             {/* Recent Activity Section */}
@@ -274,15 +412,14 @@ export default function DashboardPage() {
                     </div>
 
                     {recentActivity.orders.length === 0 ? (
-                        <div className="text-center py-8">
-                            <div className="text-4xl mb-2">📦</div>
-                            <p className="text-gray-600 text-sm mb-3">No orders yet</p>
-                            <Link
-                                href="/orders/create"
-                                className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                            >
-                                Create First Order
-                            </Link>
+                        <div className="py-4">
+                            <EmptyState
+                                icon="orders"
+                                title="No orders yet"
+                                description="Start shipping to see your recent orders here."
+                                actionLabel="Create First Order"
+                                actionHref="/orders/create"
+                            />
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -389,6 +526,6 @@ export default function DashboardPage() {
                     </div>
                 </Card>
             )}
-        </div>
+        </motion.div>
     );
 }

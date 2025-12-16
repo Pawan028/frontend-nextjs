@@ -2,10 +2,27 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import api, { showToast } from '../../lib/api';
 import Card from '../../components/ui/Card';
 import InvoicePreviewModal from '../../components/InvoicePreviewModal';
 import PaymentIntentModal from '../../components/PaymentIntentModal';
+
+// Helper function to safely format dates
+const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Invalid Date';
+        return date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+    } catch {
+        return 'Invalid Date';
+    }
+};
 
 interface Invoice {
     id: string;
@@ -109,7 +126,12 @@ export default function InvoicesPage() {
     };
 
     return (
-        <div className="p-6">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="p-6"
+        >
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Invoices</h1>
                 <p className="text-gray-600 mt-1">View and download your billing invoices</p>
@@ -171,20 +193,19 @@ export default function InvoicesPage() {
                                         <div>
                                             <p className="text-gray-600">Billing Period</p>
                                             <p className="font-medium text-gray-800">
-                                                {new Date(invoice.billingStart).toLocaleDateString()} -{' '}
-                                                {new Date(invoice.billingEnd).toLocaleDateString()}
+                                                {formatDate(invoice.billingStart)} - {formatDate(invoice.billingEnd)}
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">Amount</p>
                                             <p className="font-medium text-gray-800">
-                                                ₹{invoice.totalAmount.toFixed(2)}
+                                                ₹{Number(invoice.totalAmount).toFixed(2)}
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-gray-600">Due Date</p>
                                             <p className="font-medium text-gray-800">
-                                                {new Date(invoice.dueDate).toLocaleDateString()}
+                                                {formatDate(invoice.dueDate)}
                                             </p>
                                         </div>
                                         <div>
@@ -192,9 +213,7 @@ export default function InvoicesPage() {
                                                 {invoice.status === 'PAID' ? 'Paid On' : 'Generated On'}
                                             </p>
                                             <p className="font-medium text-gray-800">
-                                                {invoice.paidAt
-                                                    ? new Date(invoice.paidAt).toLocaleDateString()
-                                                    : new Date(invoice.createdAt).toLocaleDateString()}
+                                                {invoice.paidAt ? formatDate(invoice.paidAt) : formatDate(invoice.createdAt)}
                                             </p>
                                         </div>
                                     </div>
@@ -321,7 +340,7 @@ export default function InvoicesPage() {
                         setPaymentInvoice(null);
                         setProcessingInvoiceId(null);
                     }}
-                    amount={paymentInvoice.totalAmount}
+                    amount={Number(paymentInvoice.totalAmount)}
                     type="INVOICE_PAYMENT"
                     invoiceId={paymentInvoice.id}
                     description={`Payment for invoice ${paymentInvoice.invoiceNumber}`}
@@ -331,6 +350,6 @@ export default function InvoicesPage() {
                     }}
                 />
             )}
-        </div>
+        </motion.div>
     );
 }

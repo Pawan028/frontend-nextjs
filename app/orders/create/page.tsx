@@ -9,6 +9,7 @@ import Card from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
 import { formatCurrency } from '../../../utils/format';
+import { fireFirstOrderCelebration, fireSuccessConfetti } from '../../../utils/confetti';
 
 interface MerchantAddress {
     id: string;
@@ -320,6 +321,16 @@ export default function CreateOrderPage() {
             queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            
+            // 🎉 Fire confetti celebration!
+            // Check if this is the first order (check localStorage)
+            const hasCreatedOrder = localStorage.getItem('hasCreatedOrder');
+            if (!hasCreatedOrder) {
+                fireFirstOrderCelebration();
+                localStorage.setItem('hasCreatedOrder', 'true');
+            } else {
+                fireSuccessConfetti();
+            }
             
             router.push('/orders');
         } catch (err: any) {

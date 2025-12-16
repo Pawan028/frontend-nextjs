@@ -4,6 +4,7 @@ import Providers from './providers';
 import Navbar from '../components/Navbar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { TopupModal } from '../components/TopupModal';
+import OnboardingTour from '../components/OnboardingTour';
 
 export const metadata = {
     title: 'ShipMVP - Shipping Management',
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <Navbar />
                 <main className="p-4">{children}</main>
                 <TopupModal />
+                <OnboardingTour />
             </ErrorBoundary>
         </Providers>
         </body>

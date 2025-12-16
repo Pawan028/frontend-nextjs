@@ -265,13 +265,32 @@ export default function NDRPage() {
                                         </div>
                                     </div>
 
-                                    <div className="ml-6">
+                                    <div className="ml-6 flex flex-col gap-2">
                                         <Button
                                             size="sm"
                                             onClick={() => setSelectedNDR(ndr)}
                                         >
                                             Resolve
                                         </Button>
+                                        {/* Quick actions */}
+                                        <button
+                                            onClick={() => {
+                                                setSelectedNDR(ndr);
+                                                setResolution('REATTEMPT');
+                                            }}
+                                            className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded hover:bg-blue-200 transition-colors"
+                                        >
+                                            🔄 Reattempt
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedNDR(ndr);
+                                                setResolution('RTO');
+                                            }}
+                                            className="text-xs bg-red-100 text-red-700 px-3 py-1.5 rounded hover:bg-red-200 transition-colors"
+                                        >
+                                            ↩️ RTO
+                                        </button>
                                     </div>
                                 </div>
                             </Card>
