@@ -300,17 +300,13 @@ export default function InvoicesPage() {
                         <p className="text-sm text-gray-600">
                             Total: {invoices.length} invoice{invoices.length !== 1 ? 's' : ''}
                         </p>
-                        <p classNam{
-                        setPaymentInvoice(null);
-                        setProcessingInvoiceId(null);
-                    }}
-                    amount={paymentInvoice.totalAmount}
-                    type="INVOICE_PAYMENT"
-                    invoiceId={paymentInvoice.id}
-                    description={`Payment for invoice ${paymentInvoice.invoiceNumber}`}
-                    onSuccess={() => {
-                        setPaymentInvoice(null);
-                        setProcessingInvoiceId
+                        <p className="text-xs text-gray-500 mt-2">💡 All invoices are downloadable as PDF</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Preview Modal */}
+            {selectedInvoiceId && (
                 <InvoicePreviewModal
                     invoiceId={selectedInvoiceId}
                     onClose={() => setSelectedInvoiceId(null)}
@@ -321,13 +317,17 @@ export default function InvoicesPage() {
             {paymentInvoice && (
                 <PaymentIntentModal
                     isOpen={true}
-                    onClose={() => setPaymentInvoice(null)}
+                    onClose={() => {
+                        setPaymentInvoice(null);
+                        setProcessingInvoiceId(null);
+                    }}
                     amount={paymentInvoice.totalAmount}
                     type="INVOICE_PAYMENT"
                     invoiceId={paymentInvoice.id}
                     description={`Payment for invoice ${paymentInvoice.invoiceNumber}`}
                     onSuccess={() => {
                         setPaymentInvoice(null);
+                        setProcessingInvoiceId(null);
                     }}
                 />
             )}
