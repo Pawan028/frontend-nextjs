@@ -1,6 +1,7 @@
 // stores/useAuthStore.ts
 import { create } from 'zustand';
 import Cookies from 'js-cookie';
+import { getQueryClient } from '../lib/queryClient';
 
 interface User {
     id: string;
@@ -68,6 +69,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         Cookies.remove('token', { path: '/' });
         Cookies.remove('user', { path: '/' });
         console.log('✅ Logged out - cookies cleared');
+        // ✅ NEW: Clear all query cache to prevent data leaks
+        getQueryClient().clear();
         set({ token: null, user: null });
     },
 

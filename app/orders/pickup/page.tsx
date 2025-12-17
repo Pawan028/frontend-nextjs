@@ -47,16 +47,17 @@ export default function PickupRequestPage() {
   const queryClient = useQueryClient();
 
   // Fetch pickup addresses
-  const { data: addressesData } = useQuery({
+  const { data: addressesData, isLoading: addressesLoading, error: addressesError } = useQuery({
     queryKey: ['pickup-addresses'],
     queryFn: async () => {
-      const res = await api.get<{ success: boolean; data: Address[] }>('/addresses?type=PICKUP');
+      // ✅ FIXED: Use correct endpoint /merchant/addresses instead of /addresses
+      const res = await api.get<{ success: boolean; data: Address[] }>('/merchant/addresses?type=PICKUP');
       return res.data.data || [];
     },
   });
 
   // Fetch ready-to-ship orders
-  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+  const { data: ordersData, isLoading: ordersLoading, error: ordersError } = useQuery({
     queryKey: ['pickup-eligible-orders'],
     queryFn: async () => {
       const res = await api.get<{ success: boolean; data: Order[] }>('/orders?status=READY_TO_SHIP&limit=100');
@@ -171,6 +172,12 @@ export default function PickupRequestPage() {
                   <div key={i} className="h-16 bg-gray-200 rounded"></div>
                 ))}
               </div>
+            ) : ordersError ? (
+              <div className="text-center py-8 text-red-500">
+                <div className="text-4xl mb-2">⚠️</div>
+                <p>Failed to load orders</p>
+                <p className="text-sm mt-1">{(ordersError as any)?.response?.data?.error?.message || 'Please try again later'}</p>
+              </div>
             ) : orders.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <div className="text-4xl mb-2">📦</div>
@@ -230,18 +237,30 @@ export default function PickupRequestPage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Pickup Address
               </label>
-              <select
-                value={selectedAddressId}
-                onChange={(e) => setSelectedAddressId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select address</option>
-                {addresses.map(addr => (
-                  <option key={addr.id} value={addr.id}>
-                    {addr.name} - {addr.addressLine1}, {addr.city}
-                  </option>
-                ))}
-              </select>
+              {addressesError ? (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                  ⚠️ Failed to load addresses. Please refresh the page.
+                </div>
+              ) : addressesLoading ? (
+                <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+              ) : addresses.length === 0 ? (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm">
+                  No pickup addresses found. <Link href="/settings/addresses" className="underline">Add one here</Link>.
+                </div>
+              ) : (
+                <select
+                  value={selectedAddressId}
+                  onChange={(e) => setSelectedAddressId(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select address</option>
+                  {addresses.map(addr => (
+                    <option key={addr.id} value={addr.id}>
+                      {addr.name} - {addr.addressLine1}, {addr.city}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Preferred Date */}

@@ -1,10 +1,15 @@
  // utils/format.ts
 
-export function formatCurrency(amount: number | null | undefined): string {
-  if (amount === null || amount === undefined || isNaN(amount)) {
+export function formatCurrency(amount: number | string | null | undefined): string {
+  if (amount === null || amount === undefined) {
     return 'Rs.0.00';
   }
-  return `Rs.${amount.toFixed(2)}`;
+  // Convert string to number if needed
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) {
+    return 'Rs.0.00';
+  }
+  return `Rs.${numAmount.toFixed(2)}`;
 }
 
 export function formatDate(date: string | Date | null | undefined): string {

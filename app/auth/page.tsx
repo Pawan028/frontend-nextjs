@@ -10,6 +10,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Cookies from 'js-cookie';
+import { getQueryClient } from '../../lib/queryClient';
 
 interface BackendResponse {
     success: boolean;
@@ -77,9 +78,29 @@ export default function LoginPage() {
             const storedToken = Cookies.get('token');
             console.log('✅ Token stored in cookies:', storedToken ? 'YES' : 'NO');
 
-            // ✅ FIXED: Use router.push instead of window.location.href
-            console.log('🚀 Redirecting to dashboard...');
-            router.push('/dashboard');
+            // ✅ OPTIMIZATION: Prefetch dashboard data for instant load
+            // Note: We use the same query key format as in dashboard/page.tsx
+            const queryClient = getQueryClient();
+            if (user.merchantProfile?.id) {
+                console.log('🚀 Prefetching dashboard data...');
+                // We don't await this - let it run in background/parallel with navigation
+                queryClient.prefetchQuery({
+                    queryKey: ['dashboard', user.merchantProfile.id],
+                    queryFn: async () => {
+                        const res = await api.get('/merchant/dashboard');
+                        return res.data;
+                    },
+                    staleTime: 1000 * 30, // 30s match with backend
+                });
+            }
+
+            // ✅ FIXED: Role-Based Redirection
+            console.log('🚀 Redirecting based on role:', user.role);
+            if (user.role === 'ADMIN') {
+                router.push('/admin/invoices');
+            } else {
+                router.push('/dashboard');
+            }
 
         } catch (err: unknown) {
             console.error('❌ Login error:', err);
@@ -95,12 +116,13 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex">
-            {/* Left Panel - Branding */}
-            <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-indigo-700 p-12 flex-col justify-between">
-                <div>
+            {/* Left Panel - Branding (Glassmorphic) */}
+            <div className="hidden lg:flex lg:w-1/2 bg-blue-600/90 backdrop-blur-sm p-12 flex-col justify-between relative overflow-hidden">
+                <div className="relative z-10">
                     <Link href="/" className="text-3xl font-bold text-white">ShipMVP</Link>
                 </div>
-                <div className="space-y-6">
+                {/* ... content ... */}
+                <div className="relative z-10 space-y-6">
                     <h2 className="text-4xl font-bold text-white leading-tight">
                         Ship smarter,<br />not harder.
                     </h2>
@@ -122,28 +144,28 @@ export default function LoginPage() {
                         </div>
                     </div>
                 </div>
-                <div className="text-blue-200 text-sm">
+                <div className="relative z-10 text-blue-200 text-sm">
                     © 2025 ShipMVP. All rights reserved.
                 </div>
             </div>
 
-            {/* Right Panel - Login Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
+            {/* Right Panel - Login Form (Transparent/Glass) */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white/30 dark:bg-slate-900/30 backdrop-blur-md">
                 <div className="w-full max-w-md">
                     {/* Mobile Logo */}
                     <div className="lg:hidden text-center mb-8">
                         <Link href="/" className="text-3xl font-bold text-blue-600">ShipMVP</Link>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl dark:shadow-slate-900/50 p-8 border border-gray-100 dark:border-slate-700">
                         <div className="text-center mb-8">
-                            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
-                            <p className="text-gray-600 mt-2">Sign in to your account to continue</p>
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h1>
+                            <p className="text-gray-600 dark:text-slate-400 mt-2">Sign in to your account to continue</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                                     Email Address
                                 </label>
                                 <input
@@ -153,13 +175,13 @@ export default function LoginPage() {
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                     disabled={loading}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
+                                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100 dark:disabled:bg-slate-700 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                                 />
                             </div>
 
                             <div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-sm font-medium text-gray-700">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                                         Password
                                     </label>
                                     <a href="#" className="text-sm text-blue-600 hover:underline">
@@ -173,7 +195,7 @@ export default function LoginPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     disabled={loading}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
+                                    className="w-full px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100 dark:disabled:bg-slate-700 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                                 />
                             </div>
 
@@ -204,7 +226,7 @@ export default function LoginPage() {
                         </form>
 
                         <div className="mt-6 text-center">
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-slate-400">
                                 Don&apos;t have an account?{' '}
                                 <Link href="/auth/register" className="text-blue-600 hover:underline font-medium">
                                     Create one free
@@ -213,11 +235,11 @@ export default function LoginPage() {
                         </div>
 
                         {/* Demo credentials */}
-                        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                        <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-100 dark:border-blue-800">
                             <p className="text-xs text-blue-800 font-medium mb-2">🧪 Demo Account</p>
-                            <div className="text-xs text-blue-700 space-y-1">
-                                <p><span className="text-gray-500">Email:</span> <code className="bg-white px-2 py-0.5 rounded">merchant.full@example.com</code></p>
-                                <p><span className="text-gray-500">Password:</span> <code className="bg-white px-2 py-0.5 rounded">Merchant@123</code></p>
+                            <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                                <p><span className="text-gray-500 dark:text-slate-400">Email:</span> <code className="bg-white dark:bg-slate-700 px-2 py-0.5 rounded">merchant.full@example.com</code></p>
+                                <p><span className="text-gray-500 dark:text-slate-400">Password:</span> <code className="bg-white dark:bg-slate-700 px-2 py-0.5 rounded">Merchant@123</code></p>
                             </div>
                         </div>
                     </div>

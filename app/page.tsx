@@ -1,4 +1,4 @@
- // app/page.tsx
+// app/page.tsx
 /**
  * Marketing Landing Page
  * Professional landing page to establish credibility and convert visitors
@@ -6,26 +6,28 @@
 
 import Link from 'next/link';
 import ShippingHeroIllustration from '../components/illustrations/ShippingHero';
+import ModernBackground from '../components/ui/ModernBackground';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-transparent relative">
+      <ModernBackground />
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
+      <nav className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-50 border-b border-gray-100 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="text-2xl font-bold text-blue-600">ShipMVP</div>
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</a>
-              <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors">How it Works</a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
+              <a href="#features" className="text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-colors">Features</a>
+              <a href="#how-it-works" className="text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-colors">How it Works</a>
+              <a href="#pricing" className="text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition-colors">Pricing</a>
             </div>
             <div className="flex items-center gap-4">
-              <Link href="/auth" className="text-gray-700 hover:text-gray-900 font-medium">
+              <Link href="/auth" className="text-gray-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white font-medium">
                 Login
               </Link>
-              <Link 
-                href="/auth/register" 
+              <Link
+                href="/auth/register"
                 className="btn-gradient px-4 py-2 text-white rounded-lg transition-all hover:shadow-lg font-medium hover:-translate-y-0.5"
               >
                 Get Started Free
@@ -36,40 +38,40 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <section className="pt-32 pb-20 px-4 bg-transparent">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium mb-6">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
                 </span>
                 Trusted by 500+ D2C Brands
               </div>
-              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white leading-tight mb-6">
                 Shipping <span className="gradient-text">Simplified</span> for Your Business
               </h1>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Compare rates from 10+ courier partners, ship faster, and track everything in one dashboard. 
+              <p className="text-xl text-gray-600 dark:text-slate-400 mb-8 leading-relaxed">
+                Compare rates from 10+ courier partners, ship faster, and track everything in one dashboard.
                 The smartest way to manage your e-commerce logistics.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link 
+                <Link
                   href="/auth/register"
                   className="btn-gradient px-8 py-4 text-white rounded-xl transition-all hover:shadow-xl hover:-translate-y-1 font-semibold text-lg group"
                 >
-                  Start Free Trial 
+                  Start Free Trial
                   <span className="inline-block ml-2 group-hover:translate-x-1 transition-transform">→</span>
                 </Link>
-                <a 
+                <a
                   href="#how-it-works"
-                  className="px-8 py-4 bg-white text-gray-700 rounded-xl hover:bg-gray-50 transition-all border border-gray-200 font-semibold text-lg hover:border-blue-300 hover:shadow-md"
+                  className="px-8 py-4 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition-all border border-gray-200 dark:border-slate-600 font-semibold text-lg hover:border-blue-300 dark:hover:border-blue-500 hover:shadow-md"
                 >
                   See How It Works
                 </a>
               </div>
-              <div className="mt-8 flex items-center gap-8 text-sm text-gray-600">
+              <div className="mt-8 flex items-center gap-8 text-sm text-gray-600 dark:text-slate-400">
                 <div className="flex items-center gap-2">
                   <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -90,12 +92,12 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            
+
             {/* Hero Illustration */}
             <div className="relative hidden lg:block">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-3xl transform rotate-3 opacity-10 blur-2xl"></div>
               <ShippingHeroIllustration className="w-full h-auto max-w-lg mx-auto drop-shadow-2xl" />
-              
+
               {/* Floating Stats Cards */}
               <div className="absolute -left-4 top-1/4 bg-white rounded-xl shadow-xl p-4 border border-gray-100 animate-float">
                 <div className="flex items-center gap-3">
@@ -144,27 +146,27 @@ export default function HomePage() {
       </section>
 
       {/* Courier Logos */}
-      <section className="py-12 bg-gray-50 border-y border-gray-100">
+      <section className="py-12 bg-gray-50 dark:bg-slate-900 border-y border-gray-100 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4">
-          <p className="text-center text-gray-500 mb-8">Integrated with India&apos;s top courier partners</p>
+          <p className="text-center text-gray-500 dark:text-slate-400 mb-8">Integrated with India&apos;s top courier partners</p>
           <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60 grayscale">
             {['Delhivery', 'BlueDart', 'DTDC', 'Xpressbees', 'Ecom Express', 'Shadowfax'].map((courier) => (
-              <div key={courier} className="text-xl font-bold text-gray-400">{courier}</div>
+              <div key={courier} className="text-xl font-bold text-gray-400 dark:text-slate-500">{courier}</div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4">
+      <section id="features" className="py-20 px-4 bg-transparent dark:bg-slate-950">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Everything You Need to Ship Smarter</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Everything You Need to Ship Smarter</h2>
+            <p className="text-xl text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
               One platform to manage all your shipping needs, from rate comparison to delivery tracking.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 */}
             <div className="bg-white rounded-2xl p-8 border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1 group">
@@ -236,20 +238,20 @@ export default function HomePage() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-4 bg-gray-50">
+      <section id="how-it-works" className="py-20 px-4 bg-gray-50 dark:bg-slate-900">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Ship in 3 Simple Steps</h2>
-            <p className="text-xl text-gray-600">From order to delivery, we&apos;ve simplified everything.</p>
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Ship in 3 Simple Steps</h2>
+            <p className="text-xl text-gray-600 dark:text-slate-400">From order to delivery, we&apos;ve simplified everything.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Step 1 */}
             <div className="relative">
-              <div className="bg-white rounded-2xl p-8 text-center relative z-10">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center relative z-10">
                 <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">1</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Create Order</h3>
-                <p className="text-gray-600">Enter pickup and delivery details. We&apos;ll fetch rates from all couriers instantly.</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Create Order</h3>
+                <p className="text-gray-600 dark:text-slate-400">Enter pickup and delivery details. We&apos;ll fetch rates from all couriers instantly.</p>
               </div>
               <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 z-0">
                 <svg className="w-8 h-8 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
@@ -260,10 +262,10 @@ export default function HomePage() {
 
             {/* Step 2 */}
             <div className="relative">
-              <div className="bg-white rounded-2xl p-8 text-center relative z-10">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center relative z-10">
                 <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">2</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Schedule Pickup</h3>
-                <p className="text-gray-600">Choose your preferred time slot. The courier will come to collect your packages.</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Schedule Pickup</h3>
+                <p className="text-gray-600 dark:text-slate-400">Choose your preferred time slot. The courier will come to collect your packages.</p>
               </div>
               <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 z-0">
                 <svg className="w-8 h-8 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
@@ -274,10 +276,10 @@ export default function HomePage() {
 
             {/* Step 3 */}
             <div className="relative">
-              <div className="bg-white rounded-2xl p-8 text-center relative z-10">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 text-center relative z-10">
                 <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">3</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Track & Deliver</h3>
-                <p className="text-gray-600">Monitor your shipment in real-time. We handle the rest until delivery.</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Track & Deliver</h3>
+                <p className="text-gray-600 dark:text-slate-400">Monitor your shipment in real-time. We handle the rest until delivery.</p>
               </div>
             </div>
           </div>
@@ -285,21 +287,21 @@ export default function HomePage() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 px-4">
+      <section id="pricing" className="py-20 px-4 dark:bg-slate-950">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-gray-600">No hidden fees. Pay only for what you ship.</p>
+            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-xl text-gray-600 dark:text-slate-400">No hidden fees. Pay only for what you ship.</p>
           </div>
 
           <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
             {/* Free Plan */}
-            <div className="bg-white rounded-2xl p-8 border-2 border-gray-100">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
-              <p className="text-gray-600 mb-6">Perfect for small businesses</p>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 border-2 border-gray-100 dark:border-slate-700">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Starter</h3>
+              <p className="text-gray-600 dark:text-slate-400 mb-6">Perfect for small businesses</p>
               <div className="mb-6">
-                <span className="text-4xl font-bold text-gray-900">₹0</span>
-                <span className="text-gray-600">/month</span>
+                <span className="text-4xl font-bold text-gray-900 dark:text-white">₹0</span>
+                <span className="text-gray-600 dark:text-slate-400">/month</span>
               </div>
               <ul className="space-y-3 mb-8">
                 <li className="flex items-center gap-3 text-gray-700">
@@ -327,7 +329,7 @@ export default function HomePage() {
                   Email support
                 </li>
               </ul>
-              <Link 
+              <Link
                 href="/auth/register"
                 className="block w-full py-3 text-center bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-semibold hover:shadow-md"
               >
@@ -378,7 +380,7 @@ export default function HomePage() {
                   24/7 priority support
                 </li>
               </ul>
-              <Link 
+              <Link
                 href="/auth/register"
                 className="block w-full py-3 text-center bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all font-semibold"
               >
@@ -493,7 +495,7 @@ export default function HomePage() {
           <p className="text-xl text-blue-100 mb-8">
             Join 500+ businesses already saving time and money on shipping.
           </p>
-          <Link 
+          <Link
             href="/auth/register"
             className="inline-block px-8 py-4 bg-white text-blue-600 rounded-xl hover:bg-blue-50 transition-all hover:shadow-2xl font-semibold text-lg hover:-translate-y-1 group"
           >

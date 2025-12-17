@@ -140,6 +140,7 @@ export default function OrderDetailPage() {
     const params = useParams();
     const router = useRouter();
     const orderId = params.id as string;
+    const [isDownloadingLabel, setIsDownloadingLabel] = useState(false);
 
     const { data: response, isLoading, error } = useQuery({
         queryKey: ['order', orderId],
@@ -148,6 +149,27 @@ export default function OrderDetailPage() {
             return res.data;
         },
     });
+
+    // Download label handler
+    const handleDownloadLabel = async () => {
+        setIsDownloadingLabel(true);
+        try {
+            const res = await api.get(`/orders/${orderId}/label`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `label-${order?.orderNumber || orderId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            showToast('Label downloaded successfully!', 'success');
+        } catch (err: any) {
+            showToast(err.response?.data?.error?.message || 'Failed to download label', 'error');
+        } finally {
+            setIsDownloadingLabel(false);
+        }
+    };
 
     const order: OrderDetail | undefined = response?.data;
 
@@ -272,14 +294,20 @@ export default function OrderDetailPage() {
 
                             {/* Label Download */}
                             {order.shipment.labelUrl && (
-                                <a
-                                    href={order.shipment.labelUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                <button
+                                    onClick={handleDownloadLabel}
+                                    disabled={isDownloadingLabel}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    📄 Download Shipping Label
-                                </a>
+                                    {isDownloadingLabel ? (
+                                        <>
+                                            <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                                            Downloading...
+                                        </>
+                                    ) : (
+                                        <>📄 Download Shipping Label</>
+                                    )}
+                                </button>
                             )}
                         </Card>
                     )}

@@ -1,8 +1,8 @@
- 'use client';
+'use client';
 // components/Navbar.tsx
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuthStore } from '../stores/useAuthStore';
 import ThemeToggle from './ThemeToggle';
 
@@ -35,7 +35,13 @@ export default function Navbar() {
     router.push('/auth');
   };
 
-  const navLinks = [
+  interface NavLink {
+    href: string;
+    label: string;
+    icon: string;
+  }
+
+  const navLinks = useMemo<NavLink[]>(() => [
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
     { href: '/orders', label: 'Orders', icon: '📦' },
     { href: '/orders/pickup', label: 'Pickup', icon: '🚚' },
@@ -44,27 +50,17 @@ export default function Navbar() {
     { href: '/wallet', label: 'Wallet', icon: '💰' },
     { href: '/dashboard/rates', label: 'Rates', icon: '💵' },
     { href: '/settings/addresses', label: 'Settings', icon: '⚙️' },
-  ];
+  ], []);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
   // Don't render navigation links until auth is initialized
-  if (!isInitialized) {
-    return (
-      <nav className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link 
-              href="/dashboard" 
-              className="text-xl font-bold text-blue-600 hover:text-blue-700"
-            >
-              ShipMVP
-            </Link>
-          </div>
-        </div>
-      </nav>
-    );
+  // Also hide Navbar entirely on auth pages to let the 3D background shine
+  if (!isInitialized || pathname.startsWith('/auth')) {
+    return null;
   }
+
+
 
   return (
     <>
@@ -73,39 +69,37 @@ export default function Navbar() {
           <div className="flex justify-between items-center h-16">
             {/* Left side - Logo and Navigation */}
             <div className="flex items-center gap-8">
-              <Link 
-                href="/dashboard" 
+              <Link
+                href={user?.role === 'ADMIN' ? "/admin/invoices" : "/dashboard"}
                 className="text-xl font-bold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 ShipMVP
               </Link>
-              
+
               {/* Desktop Navigation Links - Hidden on mobile */}
               {token && (
                 <div className="hidden lg:flex items-center gap-6">
                   {navLinks.map((link) => (
-                    <Link 
+                    <Link
                       key={link.href}
-                      href={link.href} 
-                      className={`font-medium transition-colors ${
-                        isActive(link.href) 
-                          ? 'text-blue-600' 
-                          : 'text-gray-700 hover:text-blue-600'
-                      }`}
+                      href={link.href}
+                      className={`font-medium transition-colors ${isActive(link.href)
+                        ? 'text-blue-600'
+                        : 'text-gray-700 hover:text-blue-600'
+                        }`}
                     >
                       {link.label}
                     </Link>
                   ))}
-                  
+
                   {/* Admin Link - Only show for admin users */}
                   {user?.role === 'ADMIN' && (
-                    <Link 
-                      href="/admin/invoices" 
-                      className={`font-semibold transition-colors flex items-center gap-1 ${
-                        isActive('/admin') 
-                          ? 'text-purple-700' 
-                          : 'text-purple-600 hover:text-purple-700'
-                      }`}
+                    <Link
+                      href="/admin/invoices"
+                      className={`font-semibold transition-colors flex items-center gap-1 ${isActive('/admin')
+                        ? 'text-purple-700'
+                        : 'text-purple-600 hover:text-purple-700'
+                        }`}
                     >
                       <span>👑</span>
                       <span>Admin</span>
@@ -114,12 +108,12 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-            
+
             {/* Right side - User & Auth */}
             <div className="flex items-center gap-4">
               {/* Theme Toggle */}
               <ThemeToggle />
-              
+
               {/* User info - hidden on mobile */}
               {token && user && (
                 <div className="hidden sm:block text-sm text-right">
@@ -131,7 +125,7 @@ export default function Navbar() {
                   )}
                 </div>
               )}
-              
+
               {/* Auth buttons - Desktop */}
               <div className="hidden sm:block">
                 {token ? (
@@ -142,8 +136,8 @@ export default function Navbar() {
                     Logout
                   </button>
                 ) : (
-                  <Link 
-                    href="/auth" 
+                  <Link
+                    href="/auth"
                     className="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors shadow-sm inline-block"
                   >
                     Login
@@ -177,23 +171,22 @@ export default function Navbar() {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black/50 z-40"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Mobile Slide-out Menu */}
-      <div className={`lg:hidden fixed top-0 right-0 h-full w-72 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
-        mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
+      <div className={`lg:hidden fixed top-0 right-0 h-full w-72 bg-white dark:bg-slate-800 shadow-2xl dark:shadow-slate-900 z-50 transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}>
         <div className="flex flex-col h-full">
           {/* Mobile menu header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
             <span className="text-lg font-bold text-blue-600">Menu</span>
             <button
               onClick={() => setMobileMenuOpen(false)}
-              className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="p-2 rounded-lg text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
               aria-label="Close menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,8 +197,8 @@ export default function Navbar() {
 
           {/* User info on mobile */}
           {user && (
-            <div className="p-4 bg-gray-50 border-b border-gray-200">
-              <div className="text-gray-900 font-medium">{user.name || user.email}</div>
+            <div className="p-4 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700">
+              <div className="text-gray-900 dark:text-white font-medium">{user.name || user.email}</div>
               {user.merchantProfile && (
                 <div className="text-blue-600 font-semibold mt-1">
                   ₹{user.merchantProfile.walletBalance.toFixed(2)}
@@ -221,11 +214,10 @@ export default function Navbar() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive(link.href)
-                        ? 'bg-blue-50 text-blue-600 font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive(link.href)
+                      ? 'bg-blue-50 text-blue-600 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                      }`}
                   >
                     <span className="text-lg">{link.icon}</span>
                     <span>{link.label}</span>
@@ -243,11 +235,10 @@ export default function Navbar() {
                 <li>
                   <Link
                     href="/admin/invoices"
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive('/admin')
-                        ? 'bg-purple-50 text-purple-600 font-medium'
-                        : 'text-purple-600 hover:bg-purple-50'
-                    }`}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${isActive('/admin')
+                      ? 'bg-purple-50 text-purple-600 font-medium'
+                      : 'text-purple-600 hover:bg-purple-50'
+                      }`}
                   >
                     <span className="text-lg">👑</span>
                     <span>Admin Panel</span>
@@ -258,7 +249,7 @@ export default function Navbar() {
           </nav>
 
           {/* Logout button at bottom */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 dark:border-slate-700">
             <button
               onClick={handleLogout}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"

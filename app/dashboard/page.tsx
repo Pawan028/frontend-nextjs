@@ -10,16 +10,19 @@ import EmptyState from '../../components/EmptyState';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { formatCurrency } from '../../utils/format';
 import type { DashboardResponse } from '../../types/dashboard';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 // Dynamic import for chart (prevents SSR issues with recharts)
-const OrdersChart = dynamic(() => import('../../components/charts/OrdersChart'), { 
-  ssr: false,
-  loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-xl"></div>
+const OrdersChart = dynamic(() => import('../../components/charts/OrdersChart'), {
+    ssr: false,
+    loading: () => <div className="h-64 bg-gray-100 animate-pulse rounded-xl"></div>
 });
 
 export default function DashboardPage() {
+    const user = useAuthStore((s) => s.user);
     const { data, isLoading, error, isFetching } = useQuery<DashboardResponse>({
-        queryKey: ['dashboard'],
+        // ✅ SECURITY: Scope query key to merchant ID to prevent cross-user data leaks
+        queryKey: ['dashboard', user?.merchantProfile?.id || 'anonymous'],
         queryFn: async () => {
             try {
                 const response = await api.get<DashboardResponse>('/merchant/dashboard');
@@ -131,7 +134,8 @@ export default function DashboardPage() {
             }
         },
         // ✅ PERFORMANCE OPTIMIZATION: Cache for 2 minutes, refetch in background
-        staleTime: 2 * 60 * 1000, // 2 minutes - data is considered fresh
+        // ✅ PERFORMANCE OPTIMIZATION: Cache for 30s (matches backend TTL)
+        staleTime: 30 * 1000,
         gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache
         refetchInterval: 30000, // Background refresh every 30s
         refetchOnWindowFocus: true, // Refetch when user returns
@@ -174,7 +178,7 @@ export default function DashboardPage() {
     const { merchant, stats, recentActivity } = data.data;
 
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -183,8 +187,8 @@ export default function DashboardPage() {
             {/* Header */}
             <div className="mb-8 flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                    <p className="text-gray-600 mt-1">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+                    <p className="text-gray-600 dark:text-slate-400 mt-1">
                         Welcome back, {merchant.name}! Here&apos;s your shipping overview for {merchant.companyName}.
                     </p>
                 </div>
@@ -207,26 +211,26 @@ export default function DashboardPage() {
                         <p className="text-blue-100 text-sm">Get things done faster</p>
                     </div>
                     <div className="flex flex-wrap gap-3">
-                        <Link 
-                            href="/orders/create" 
+                        <Link
+                            href="/orders/create"
                             className="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors text-sm"
                         >
                             📦 Create Order
                         </Link>
-                        <Link 
-                            href="/orders/pickup" 
+                        <Link
+                            href="/orders/pickup"
                             className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-400 transition-colors text-sm"
                         >
                             🚚 Schedule Pickup
                         </Link>
-                        <Link 
-                            href="/dashboard/rates" 
+                        <Link
+                            href="/dashboard/rates"
                             className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-400 transition-colors text-sm"
                         >
                             💰 Check Rates
                         </Link>
-                        <Link 
-                            href="/wallet" 
+                        <Link
+                            href="/wallet"
                             className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-400 transition-colors text-sm"
                         >
                             💳 Top Up Wallet
@@ -239,7 +243,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {/* Wallet Balance */}
                 <Card>
-                    <div className="text-sm text-gray-600 mb-1">Wallet Balance</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Wallet Balance</div>
                     <div className="text-2xl font-bold text-blue-600">
                         {formatCurrency(stats.wallet.balance)}
                     </div>
@@ -250,8 +254,8 @@ export default function DashboardPage() {
 
                 {/* Total Orders */}
                 <Card>
-                    <div className="text-sm text-gray-600 mb-1">Total Orders</div>
-                    <div className="text-2xl font-bold text-gray-900">
+                    <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Total Orders</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
                         {stats.orders.total}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
@@ -261,7 +265,7 @@ export default function DashboardPage() {
 
                 {/* Delivery Rate */}
                 <Card>
-                    <div className="text-sm text-gray-600 mb-1">Delivery Rate</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Delivery Rate</div>
                     <div className="text-2xl font-bold text-green-600">
                         {stats.orders.deliveryRate}%
                     </div>
@@ -272,7 +276,7 @@ export default function DashboardPage() {
 
                 {/* Revenue Growth */}
                 <Card>
-                    <div className="text-sm text-gray-600 mb-1">Revenue Growth</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-400 mb-1">Revenue Growth</div>
                     <div className="text-2xl font-bold text-purple-600">
                         {stats.revenue.growth > 0 ? '+' : ''}{stats.revenue.growth.toFixed(1)}%
                     </div>
@@ -339,7 +343,7 @@ export default function DashboardPage() {
                 <Card className="lg:col-span-2">
                     <div className="flex items-center justify-between mb-4">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-900">Order Trends</h3>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Order Trends</h3>
                             <p className="text-sm text-gray-500">Last 7 days performance</p>
                         </div>
                         <div className="flex items-center gap-4 text-sm">
@@ -402,7 +406,7 @@ export default function DashboardPage() {
                 {/* Recent Orders */}
                 <Card>
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold text-gray-900">Recent Orders</h2>
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Orders</h2>
                         <Link
                             href="/orders/create"
                             className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -437,8 +441,8 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
                                     <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                    {order.status}
-                  </span>
+                                        {order.status}
+                                    </span>
                                 </div>
                             ))}
                             <Link
@@ -454,7 +458,7 @@ export default function DashboardPage() {
                 {/* Recent Transactions */}
                 <Card>
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Recent Transactions</h2>
                         <Link
                             href="/wallet"
                             className="text-sm text-blue-600 hover:underline"
@@ -487,9 +491,8 @@ export default function DashboardPage() {
                                     </div>
                                     <div className="text-right">
                                         <div
-                                            className={`font-semibold ${
-                                                tx.type === 'CREDIT' ? 'text-green-600' : 'text-red-600'
-                                            }`}
+                                            className={`font-semibold ${tx.type === 'CREDIT' ? 'text-green-600' : 'text-red-600'
+                                                }`}
                                         >
                                             {tx.type === 'CREDIT' ? '+' : '-'}{formatCurrency(tx.amount)}
                                         </div>
