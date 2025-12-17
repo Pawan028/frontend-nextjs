@@ -10,6 +10,20 @@ import Button from '../../../components/ui/Button';
 import Card from '../../../components/ui/Card';
 import { useAuthStore } from '../../../stores/useAuthStore';
 
+// Eye icons for password visibility toggle
+const EyeIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+  </svg>
+);
+
+const EyeOffIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+  </svg>
+);
+
 interface BackendResponse {
   success: boolean;
   data?: {
@@ -37,6 +51,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -53,8 +68,16 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    // Validate password requirements (must match backend)
+    const passwordErrors: string[] = [];
+    if (password.length < 8) passwordErrors.push('at least 8 characters');
+    if (!/[a-z]/.test(password)) passwordErrors.push('one lowercase letter');
+    if (!/[A-Z]/.test(password)) passwordErrors.push('one uppercase letter');
+    if (!/\d/.test(password)) passwordErrors.push('one number');
+    if (!/[@$!%*?&]/.test(password)) passwordErrors.push('one special character (@$!%*?&)');
+    
+    if (passwordErrors.length > 0) {
+      setError(`Password must contain: ${passwordErrors.join(', ')}`);
       return;
     }
 
@@ -77,41 +100,12 @@ export default function RegisterPage() {
         throw new Error(res.data.error?.message || 'Registration failed');
       }
 
-      // If backend returns token with registration, use it
-      if (res.data.data?.token) {
-        console.log('🔐 Token received, auto-logging in...');
-        const user = res.data.data.user || {
-          id: res.data.data.id || '',
-          email: res.data.data.email || email,
-          name: res.data.data.name || name,
-          role: res.data.data.role || 'MERCHANT',
-        };
-        
-        setAuth(res.data.data.token, user);
-        window.location.href = '/dashboard';
-      } else {
-        // Registration successful but no token - need to login
-        console.log('✅ Registration successful, now logging in...');
-        const loginRes = await api.post<BackendResponse>('/auth/login', {
-          email,
-          password,
-        });
-        
-        if (loginRes.data.success && loginRes.data.data?.token) {
-          const user = loginRes.data.data.user || {
-            id: loginRes.data.data.id || '',
-            email: loginRes.data.data.email || email,
-            name: loginRes.data.data.name || name,
-            role: loginRes.data.data.role || 'MERCHANT',
-          };
-          
-          setAuth(loginRes.data.data.token, user);
-          window.location.href = '/dashboard';
-        } else {
-          // Fallback: redirect to login page
-          router.push('/auth?registered=true');
-        }
-      }
+      // Registration successful - redirect to email verification
+      console.log('✅ Registration successful, redirecting to email verification...');
+      showToast('Registration successful! Please verify your email.', 'success');
+      
+      // Redirect to verify-email page with email parameter
+      router.push(`/auth/verify-email?email=${encodeURIComponent(email)}&newUser=true`);
     } catch (err) {
       console.error('❌ Registration error:', err);
       
@@ -220,31 +214,93 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={loading}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none p-1"
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm</label>
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100"
-                  />
-                </div>
+                {/* Password Strength Indicator */}
+                {password && (
+                  <div className="mt-2 space-y-2">
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, i) => {
+                        const strength = [
+                          password.length >= 8,
+                          /[a-z]/.test(password),
+                          /[A-Z]/.test(password),
+                          /\d/.test(password),
+                          /[@$!%*?&]/.test(password)
+                        ].filter(Boolean).length;
+                        return (
+                          <div
+                            key={i}
+                            className={`h-1.5 flex-1 rounded-full transition-colors ${
+                              i < strength 
+                                ? strength <= 2 ? 'bg-red-500' : strength <= 3 ? 'bg-yellow-500' : strength <= 4 ? 'bg-blue-500' : 'bg-green-500'
+                                : 'bg-gray-200'
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="text-xs text-gray-500 space-y-0.5">
+                      <div className={`flex items-center gap-1 ${password.length >= 8 ? 'text-green-600' : ''}`}>
+                        {password.length >= 8 ? '✓' : '○'} At least 8 characters
+                      </div>
+                      <div className={`flex items-center gap-1 ${/[a-z]/.test(password) ? 'text-green-600' : ''}`}>
+                        {/[a-z]/.test(password) ? '✓' : '○'} One lowercase letter
+                      </div>
+                      <div className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? 'text-green-600' : ''}`}>
+                        {/[A-Z]/.test(password) ? '✓' : '○'} One uppercase letter
+                      </div>
+                      <div className={`flex items-center gap-1 ${/\d/.test(password) ? 'text-green-600' : ''}`}>
+                        {/\d/.test(password) ? '✓' : '○'} One number
+                      </div>
+                      <div className={`flex items-center gap-1 ${/[@$!%*?&]/.test(password) ? 'text-green-600' : ''}`}>
+                        {/[@$!%*?&]/.test(password) ? '✓' : '○'} One special character (@$!%*?&)
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all disabled:bg-gray-100 ${
+                    confirmPassword && password !== confirmPassword 
+                      ? 'border-red-300 bg-red-50' 
+                      : confirmPassword && password === confirmPassword 
+                        ? 'border-green-300 bg-green-50' 
+                        : 'border-gray-300'
+                  }`}
+                />
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="mt-1 text-xs text-red-600">Passwords do not match</p>
+                )}
               </div>
 
               {error && (

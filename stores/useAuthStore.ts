@@ -8,6 +8,7 @@ interface User {
     email: string;
     name?: string;
     role?: string;
+    emailVerified?: boolean;
     merchantProfile?: {
         id: string;
         companyName: string;
@@ -20,10 +21,12 @@ interface AuthState {
     user: User | null;
     isInitialized: boolean;
     setAuth: (token: string, user: User) => void;
-    updateWalletBalance: (newBalance: number) => void;  // ✅ NEW METHOD
+    setUser: (user: User) => void;  // ✅ NEW METHOD
+    updateWalletBalance: (newBalance: number) => void;
     logout: () => void;
     initAuth: () => void;
 }
+
 
 const COOKIE_OPTIONS = {
     expires: 7,
@@ -44,8 +47,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ token, user, isInitialized: true });
     },
 
-    // ✅ NEW: Update wallet balance in store and cookies
+    // ✅ NEW: Update user in store and cookies
+    setUser: (user: User) => {
+        Cookies.set('user', JSON.stringify(user), COOKIE_OPTIONS);
+        console.log('✅ User updated in cookies');
+        set({ user });
+    },
+
+    // ✅ Update wallet balance in store and cookies
     updateWalletBalance: (newBalance: number) => {
+
         set((state) => {
             if (!state.user?.merchantProfile) return state;
 

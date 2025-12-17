@@ -1,8 +1,8 @@
 'use client';
 
 // app/auth/page.tsx
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '../../lib/api';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -34,13 +34,24 @@ interface BackendResponse {
     };
 }
 
-export default function LoginPage() {
+function LoginContent() {
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const router = useRouter();
     const setAuth = useAuthStore((s) => s.setAuth);
+    
+    // Check for success messages from registration/verification
+    useEffect(() => {
+        if (searchParams.get('verified') === 'true') {
+            setSuccessMessage('🎉 Email verified successfully! Please login to continue.');
+        } else if (searchParams.get('registered') === 'true') {
+            setSuccessMessage('✅ Registration successful! Please login.');
+        }
+    }, [searchParams]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -102,10 +113,22 @@ export default function LoginPage() {
                 router.push('/dashboard');
             }
 
-        } catch (err: unknown) {
+        } catch (err: any) {
             console.error('❌ Login error:', err);
+            
+            // Check for email not verified error
+            const errorData = err.response?.data?.error;
+            if (errorData?.code === 'EMAIL_NOT_VERIFIED') {
+                // Redirect to verification page with email
+                const userEmail = errorData.email || email;
+                router.push(`/auth/verify-email?email=${encodeURIComponent(userEmail)}&fromLogin=true`);
+                return;
+            }
+            
             if (err instanceof Error) {
                 setError(err.message);
+            } else if (err.response?.data?.error?.message) {
+                setError(err.response.data.error.message);
             } else {
                 setError('Login failed. Please check your credentials.');
             }
@@ -163,6 +186,13 @@ export default function LoginPage() {
                             <p className="text-gray-600 dark:text-slate-400 mt-2">Sign in to your account to continue</p>
                         </div>
 
+                        {/* Success Message */}
+                        {successMessage && (
+                            <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                                <span>{successMessage}</span>
+                            </div>
+                        )}
+                        
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
@@ -184,9 +214,9 @@ export default function LoginPage() {
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                                         Password
                                     </label>
-                                    <a href="#" className="text-sm text-blue-600 hover:underline">
+                                    <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:underline">
                                         Forgot password?
-                                    </a>
+                                    </Link>
                                 </div>
                                 <input
                                     type="password"
@@ -246,5 +276,18 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Main export with Suspense wrapper for useSearchParams
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+            </div>
+        }>
+            <LoginContent />
+        </Suspense>
     );
 }

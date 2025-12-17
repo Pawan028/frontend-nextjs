@@ -59,11 +59,19 @@ api.interceptors.response.use(
             );
         }
 
-        if (errorCode === 'UNAUTHORIZED') {
+        if (errorCode === 'UNAUTHORIZED' || error.response?.status === 401) {
             console.warn('🔐 Unauthorized - clearing auth');
             const { logout } = useAuthStore.getState();
             logout();
-            // Redirect will be handled by middleware
+            // Redirect to login
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth')) {
+                window.location.href = '/auth';
+            }
+        }
+
+        if (errorCode === 'RATE_LIMITED' || error.response?.status === 429) {
+            console.warn('⏳ Rate limited');
+            showToast(errorMessage || 'Too many attempts. Please wait and try again.', 'warning');
         }
 
         if (errorCode === 'VALIDATION_ERROR') {
