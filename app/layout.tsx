@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { TopupModal } from '../components/TopupModal';
 import OnboardingTour from '../components/OnboardingTour';
+import { inter, barcode128 } from '../lib/fonts';
 
 export const metadata = {
     title: 'ShipMVP - Shipping Management',
@@ -14,7 +15,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
     return (
         <html lang="en">
-        <body>
+        <body className={`${inter.variable} ${barcode128.variable} font-sans`}>
         <Providers>
             <ErrorBoundary>
                 <Navbar />

@@ -292,8 +292,8 @@ export default function OrderDetailPage() {
                                 )}
                             </div>
 
-                            {/* Label Download */}
-                            {order.shipment.labelUrl && (
+                            {/* Label Download - Always show if shipment exists (backend auto-generates if needed) */}
+                            {order.shipment && (
                                 <button
                                     onClick={handleDownloadLabel}
                                     disabled={isDownloadingLabel}
