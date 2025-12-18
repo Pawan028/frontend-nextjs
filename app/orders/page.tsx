@@ -9,6 +9,8 @@ import Button from '../../components/ui/Button';
 import Link from 'next/link';
 import EmptyState from '../../components/EmptyState';
 import { OrderCardSkeleton } from '../../components/ui/Skeleton';
+import CarrierBadge from '../../components/CarrierBadge';
+import { TrackingStatusBadge } from '../../components/TrackingTimeline';
 import { formatCurrency, formatDate, getStatusColor } from '../../utils/format';
 
 interface Order {
@@ -259,11 +261,13 @@ export default function OrdersPage() {
                     )}
                     {order.shipment && (
                       <>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 items-center">
                           <span className="text-gray-500">Courier:</span>
-                          <span className="text-gray-900">
-                            {order.shipment.courier || 'Assigned'}
-                          </span>
+                          <CarrierBadge
+                            carrier={order.shipment.courier || 'Unknown'}
+                            size="sm"
+                            showLogo={false}
+                          />
                         </div>
                         <div className="flex flex-wrap gap-1 items-center">
                           <span className="text-gray-500">AWB:</span>

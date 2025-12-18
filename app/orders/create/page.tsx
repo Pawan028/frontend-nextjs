@@ -8,7 +8,8 @@ import api from '../../../lib/api';
 import Card from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
 import Button from '../../../components/ui/Button';
-import { formatCurrency } from '../../../utils/format';
+import RateComparison from '../../../components/RateComparison';
+import { CarrierRate } from '../../../types/carrier';
 import { fireFirstOrderCelebration, fireSuccessConfetti } from '../../../utils/confetti';
 
 interface MerchantAddress {
@@ -25,12 +26,8 @@ interface MerchantAddress {
 }
 
 
-interface RateOption {
-    courier: string;
-    serviceName: string;
-    price: number;
-    eta: number;
-}
+// Use CarrierRate type directly for rates
+type RateOption = CarrierRate;
 
 interface CreateOrderPayload {
     pickup_address_id: string;
@@ -103,6 +100,7 @@ export default function CreateOrderPage() {
 
     // Rates state
     const [rates, setRates] = useState<RateOption[]>([]);
+    const [selectedRate, setSelectedRate] = useState<RateOption | null>(null); // 🆕 User-selected carrier
     const [loadingRates, setLoadingRates] = useState(false);
     const [creatingOrder, setCreatingOrder] = useState(false);
     const [error, setError] = useState('');
@@ -265,7 +263,7 @@ export default function CreateOrderPage() {
         setCreatingOrder(true);
 
         // Backend expects snake_case field names
-        const payload: CreateOrderPayload = {
+        const payload: any = {
             pickup_address_id: pickupAddressId,
             delivery_address: {
                 name,
@@ -287,9 +285,8 @@ export default function CreateOrderPage() {
             ],
             weight: Number(weight),
             invoice_amount: Number(productPrice),
-            // ✅ FIXED: Send lowercase to match validation schema
             payment_type: paymentType.toLowerCase() as 'prepaid' | 'cod',
-            // ✅ Add cod_amount when payment type is COD
+            // ✅ FIXED: Add cod_amount when payment type is COD
             cod_amount: paymentType.toLowerCase() === 'cod' ? Number(productPrice) : 0,
             dimensions: {
                 length: 10,
@@ -297,6 +294,12 @@ export default function CreateOrderPage() {
                 height: 10,
             },
         };
+
+        // 🆕 Add selected carrier if user made a selection
+        if (selectedRate) {
+            payload.selected_courier = selectedRate.courier;
+            payload.selected_service = selectedRate.serviceName;
+        }
 
         try {
             console.log('📦 Order Payload:', JSON.stringify(payload, null, 2));
@@ -528,27 +531,22 @@ export default function CreateOrderPage() {
             {rates.length > 0 && (
                 <Card className="mb-6">
                     <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                        Available Courier Services
+                        🚚 Select Courier Service
                     </h2>
-                    <div className="space-y-3">
-                        {rates.map((rate, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center justify-between p-4 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                            >
-                                <div className="flex-1">
-                                    <p className="font-medium text-gray-800">{rate.serviceName}</p>
-                                    <p className="text-sm text-gray-600">
-                                        {rate.courier} • ETA: {rate.eta} days
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-lg font-semibold text-gray-800">
-                                        {formatCurrency(rate.price)}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                    <RateComparison
+                        rates={rates}
+                        selectedRate={selectedRate}
+                        onSelectRate={(rate) => setSelectedRate(rate)}
+                        showDetails={true}
+                    />
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm text-blue-700">
+                            {selectedRate ? (
+                                <>✅ <strong>Selected:</strong> {selectedRate.courier} - {selectedRate.serviceName} ({selectedRate.eta} day{selectedRate.eta !== 1 ? 's' : ''}) - ₹{selectedRate.price}</>
+                            ) : (
+                                <>💡 <strong>Tip:</strong> Click on a carrier to select it. If no selection, cheapest option will be used.</>
+                            )}
+                        </p>
                     </div>
                 </Card>
             )}

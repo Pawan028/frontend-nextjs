@@ -66,8 +66,24 @@ export default function RateCalculator() {
   // Get rates
   const ratesMutation = useMutation({
     mutationFn: async (data: { originPincode: string; destPincode: string; weight: number; paymentType: string }) => {
-      const res = await api.post<RateResponse>('/rates/check', data);
-      return res.data;
+      // ✅ Use correct endpoint
+      const res = await api.post<any>('/rates', data);
+
+      // ✅ Map backend response to component's expected format
+      // Backend returns: { rates: [{ courier, price, eta, ... }] }
+      const backendRates = res.data?.data?.rates || res.data?.rates || [];
+
+      return {
+        data: {
+          rates: backendRates.map((r: any) => ({
+            courier: r.courier,
+            serviceable: true,
+            rate: r.price,
+            estimatedDays: `${r.eta} days`,
+            codAvailable: true // Mock assumption or add logic
+          })) as RateResult[]
+        }
+      };
     },
   });
 
@@ -77,7 +93,7 @@ export default function RateCalculator() {
     }
 
     setShowResults(true);
-    
+
     // Check serviceability
     await serviceabilityMutation.mutateAsync({
       pickupPincode: originPincode,
@@ -164,8 +180,8 @@ export default function RateCalculator() {
         </div>
       </div>
 
-      <Button 
-        onClick={handleCalculate} 
+      <Button
+        onClick={handleCalculate}
         disabled={isLoading || !originPincode || !destPincode || !weight}
         className="w-full"
       >

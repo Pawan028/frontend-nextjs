@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { showToast } from '../../../lib/api';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
+import CarrierBadge from '../../../components/CarrierBadge';
+import TrackingTimeline, { TrackingStatusBadge } from '../../../components/TrackingTimeline';
 import { formatCurrency, formatDate, getStatusColor } from '../../../utils/format';
 
 interface TrackingEvent {
@@ -271,23 +273,21 @@ export default function OrderDetailPage() {
                             <h2 className="text-lg font-semibold text-gray-900 mb-4">🚚 Shipment Information</h2>
                             <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                                 <div>
-                                    <p className="text-gray-600">Courier</p>
-                                    <p className="font-medium text-gray-900">{order.shipment.courier}</p>
+                                    <p className="text-gray-600 mb-1">Courier</p>
+                                    <CarrierBadge carrier={order.shipment.courier} />
                                 </div>
                                 <div>
                                     <p className="text-gray-600">AWB Number</p>
-                                    <p className="font-medium text-gray-900 font-mono text-xs">{order.shipment.awb}</p>
+                                    <p className="font-medium text-gray-900 font-mono text-sm">{order.shipment.awb}</p>
                                 </div>
                                 <div>
-                                    <p className="text-gray-600">Shipment Status</p>
-                                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(order.shipment.shipmentStatus)}`}>
-                    {order.shipment.shipmentStatus}
-                  </span>
+                                    <p className="text-gray-600 mb-1">Shipment Status</p>
+                                    <TrackingStatusBadge status={order.shipment.shipmentStatus} />
                                 </div>
                                 {order.trackingNumber && (
                                     <div>
                                         <p className="text-gray-600">Tracking Number</p>
-                                        <p className="font-medium text-gray-900 font-mono text-xs">{order.trackingNumber}</p>
+                                        <p className="font-medium text-gray-900 font-mono text-sm">{order.trackingNumber}</p>
                                     </div>
                                 )}
                             </div>
