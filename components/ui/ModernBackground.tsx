@@ -71,16 +71,80 @@ export default function ModernBackground() {
 
             {/* Mesh Grid Pattern (subtle) */}
             <div
-                className="absolute inset-0 opacity-[0.03]"
+                className="absolute inset-0 opacity-[0.08]"
                 style={{
                     backgroundImage: isDark
-                        ? `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`
-                        : `linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)`,
+                        ? `linear-gradient(rgba(59,130,246,0.15) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(59,130,246,0.15) 1px, transparent 1px)`
+                        : `linear-gradient(rgba(100,116,139,0.1) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(100,116,139,0.1) 1px, transparent 1px)`,
                     backgroundSize: '60px 60px',
                 }}
             />
+
+            {/* Tech Circuit Pattern - NexusShip Style */}
+            <svg className="absolute inset-0 opacity-[0.06]" style={{ mixBlendMode: 'screen' }}>
+                <defs>
+                    <pattern id="circuit" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                        {/* Horizontal lines */}
+                        <line 
+                            x1="0" y1="50" x2="100" y2="50" 
+                            stroke={isDark ? 'rgba(59,130,246,0.3)' : 'rgba(100,116,139,0.2)'} 
+                            strokeWidth="0.5"
+                        />
+                        {/* Vertical lines */}
+                        <line 
+                            x1="50" y1="0" x2="50" y2="100" 
+                            stroke={isDark ? 'rgba(99,102,241,0.3)' : 'rgba(100,116,139,0.2)'} 
+                            strokeWidth="0.5"
+                        />
+                        {/* Connection nodes */}
+                        <circle 
+                            cx="50" cy="50" r="2" 
+                            fill={isDark ? 'rgba(59,130,246,0.5)' : 'rgba(100,116,139,0.3)'}
+                        />
+                        {/* Corner nodes for detail */}
+                        <circle 
+                            cx="0" cy="0" r="1.5" 
+                            fill={isDark ? 'rgba(99,102,241,0.4)' : 'rgba(100,116,139,0.25)'}
+                        />
+                        <circle 
+                            cx="100" cy="0" r="1.5" 
+                            fill={isDark ? 'rgba(99,102,241,0.4)' : 'rgba(100,116,139,0.25)'}
+                        />
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#circuit)"/>
+            </svg>
+
+            {/* Animated Glow Lines - NexusShip Tech Aesthetic */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div 
+                    className="absolute top-1/4 left-0 w-full h-px animate-slide"
+                    style={{
+                        background: isDark
+                            ? 'linear-gradient(to right, transparent, rgba(6,182,212,0.4) 50%, transparent)'
+                            : 'linear-gradient(to right, transparent, rgba(59,130,246,0.3) 50%, transparent)'
+                    }}
+                />
+                <div 
+                    className="absolute top-2/3 left-0 w-full h-px animate-slide-reverse"
+                    style={{
+                        background: isDark
+                            ? 'linear-gradient(to right, transparent, rgba(59,130,246,0.4) 50%, transparent)'
+                            : 'linear-gradient(to right, transparent, rgba(99,102,241,0.3) 50%, transparent)'
+                    }}
+                />
+                <div 
+                    className="absolute top-1/2 left-0 w-full h-px opacity-60"
+                    style={{
+                        background: isDark
+                            ? 'linear-gradient(to right, transparent, rgba(139,92,246,0.3) 50%, transparent)'
+                            : 'linear-gradient(to right, transparent, rgba(100,116,139,0.2) 50%, transparent)',
+                        animation: 'slide 15s linear infinite'
+                    }}
+                />
+            </div>
 
             {/* Radial Glow at Top */}
             <div

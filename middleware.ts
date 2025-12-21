@@ -8,32 +8,37 @@ export function middleware(request: NextRequest) {
 
   console.log('🔒 Middleware check:', { pathname, hasToken: !!token });
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/auth', '/auth/register'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+  // All auth-related routes (login, register, verify, forgot-password)
+  const authRoutes = ['/auth'];
+  const isAuthRoute = authRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
 
-  // If no token and trying to access protected route
-  if (!token && !isPublicRoute) {
-    console.log('❌ No token - redirecting to /auth');
-    return NextResponse.redirect(new URL('/auth', request.url));
+  // Protected routes that require authentication
+  const protectedRoutes = ['/dashboard', '/orders', '/wallet', '/settings', '/invoices', '/ndr', '/admin'];
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+
+  // Landing page
+  const isLandingPage = pathname === '/';
+
+  // If no token and trying to access protected route, redirect to auth
+  if (!token && isProtectedRoute) {
+    console.log('❌ No token on protected route - redirecting to /auth');
+    const url = new URL('/auth', request.url);
+    url.searchParams.set('redirect', pathname); // Remember where they wanted to go
+    return NextResponse.redirect(url);
   }
 
-  // If has token and trying to access auth pages, redirect to dashboard
-  if (token && isPublicRoute) {
+  // If has token and trying to access auth pages (login/register only), redirect to dashboard
+  // Allow verify-email and forgot-password even when logged in
+  if (token && (pathname === '/auth' || pathname === '/auth/register')) {
     console.log('✅ Has token on auth page - redirecting to /dashboard');
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // If has token and on root, redirect to dashboard
-  if (token && pathname === '/') {
-    console.log('✅ Has token on root - redirecting to /dashboard');
+  // Optional: If logged in and on landing page, redirect to dashboard
+  // Comment this out if you want logged-in users to see landing page
+  if (token && isLandingPage) {
+    console.log('✅ Has token on landing - redirecting to /dashboard');
     return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  // If no token and on root, redirect to auth
-  if (!token && pathname === '/') {
-    console.log('❌ No token on root - redirecting to /auth');
-    return NextResponse.redirect(new URL('/auth', request.url));
   }
 
   return NextResponse.next();

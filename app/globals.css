@@ -85,6 +85,30 @@
    animation-delay: 1.5s;
  }
 
+/* Mobile Menu Animation */
+@keyframes slide-in-from-top {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.slide-in-from-top-2 {
+  animation: slide-in-from-top 0.2s ease-out;
+}
+
+.duration-200 {
+  animation-duration: 200ms;
+}
+
  /* Modern Background Blob Animations */
  @keyframes blob {
 
@@ -190,6 +214,28 @@
    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
  }
 
+ .glow-cyan {
+   box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+ }
+
+ .glow-premium {
+   box-shadow: 0 0 30px rgba(59, 130, 246, 0.4),
+               0 0 60px rgba(99, 102, 241, 0.2);
+ }
+
+ .dark .glow-blue {
+   box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+ }
+
+ .dark .glow-cyan {
+   box-shadow: 0 0 30px rgba(6, 182, 212, 0.5);
+ }
+
+ .dark .glow-premium {
+   box-shadow: 0 0 40px rgba(59, 130, 246, 0.5),
+               0 0 80px rgba(99, 102, 241, 0.3);
+ }
+
  /* Pulse Animation */
  @keyframes pulse-slow {
 
@@ -268,23 +314,32 @@
  /* Dark mode improved palette */
  :root {
    --bg-color: #f8fafc;
+   --bg-secondary: #ffffff;
    --text-primary: #0f172a;
    --text-secondary: #475569;
    --card-bg: #ffffff;
+   --card-bg-glass: rgba(255, 255, 255, 0.7);
    --border-color: #e2e8f0;
+   --border-glow: rgba(59, 130, 246, 0.15);
+   --accent-glow: rgba(59, 130, 246, 0.2);
  }
 
  .dark {
-   --bg-color: #0f172a;
-   /* Slate-900 (Deep Blue-Grey) */
+   --bg-color: #0a0e1a;
+   /* Even darker base for depth */
+   --bg-secondary: #0f172a;
+   /* Slate-900 */
    --text-primary: #f1f5f9;
    /* Slate-100 */
    --text-secondary: #94a3b8;
    /* Slate-400 */
-   --card-bg: #1e293b;
-   /* Slate-800 */
-   --border-color: #334155;
-   /* Slate-700 */
+   --card-bg: #1a202e;
+   /* Custom slate-850 */
+   --card-bg-glass: rgba(26, 32, 46, 0.7);
+   --border-color: #2d3748;
+   /* Slightly lighter for visibility */
+   --border-glow: rgba(59, 130, 246, 0.3);
+   --accent-glow: rgba(59, 130, 246, 0.4);
  }
 
  html,
@@ -306,6 +361,69 @@
    background: rgba(15, 23, 42, 0.6);
    /* Darker glass in dark mode */
    border: 1px solid rgba(255, 255, 255, 0.1);
+ }
+
+ /* Premium Glassmorphic Variants */
+ .glass-light {
+   background: rgba(255, 255, 255, 0.6);
+   backdrop-filter: blur(8px);
+   -webkit-backdrop-filter: blur(8px);
+   border: 1px solid rgba(255, 255, 255, 0.2);
+ }
+
+ .dark .glass-light {
+   background: rgba(26, 32, 46, 0.5);
+   border: 1px solid rgba(255, 255, 255, 0.05);
+ }
+
+ .glass-strong {
+   background: rgba(255, 255, 255, 0.85);
+   backdrop-filter: blur(16px);
+   -webkit-backdrop-filter: blur(16px);
+   border: 1px solid rgba(255, 255, 255, 0.4);
+ }
+
+ .dark .glass-strong {
+   background: rgba(26, 32, 46, 0.85);
+   border: 1px solid rgba(255, 255, 255, 0.15);
+ }
+
+ /* Premium Border Glows */
+ .border-glow {
+   position: relative;
+   border: 1px solid transparent;
+   background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+               linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(99, 102, 241, 0.3)) border-box;
+ }
+
+ .border-glow-strong {
+   position: relative;
+   border: 2px solid transparent;
+   background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+               linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(6, 182, 212, 0.5)) border-box;
+   box-shadow: 0 0 30px rgba(59, 130, 246, 0.2),
+               inset 0 0 20px rgba(59, 130, 246, 0.05);
+ }
+
+ .dark .border-glow-strong {
+   box-shadow: 0 0 40px rgba(59, 130, 246, 0.3),
+               inset 0 0 20px rgba(59, 130, 246, 0.08);
+ }
+
+ /* Card Glow Hover Effect */
+ .card-glow-hover {
+   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+ }
+
+ .card-glow-hover:hover {
+   box-shadow: 0 0 40px rgba(59, 130, 246, 0.3),
+               0 10px 30px rgba(0, 0, 0, 0.15);
+   transform: translateY(-2px);
+ }
+
+ .dark .card-glow-hover:hover {
+   box-shadow: 0 0 50px rgba(59, 130, 246, 0.4),
+               0 15px 40px rgba(0, 0, 0, 0.3);
  }
 
  /* Card utilities */
