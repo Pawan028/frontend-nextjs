@@ -10,7 +10,7 @@ import EmptyState from '../../components/EmptyState';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { formatCurrency } from '../../utils/format';
 import type { DashboardResponse } from '../../types/dashboard';
-import { useAuthStore } from '../../stores/useAuthStore';
+import { useMerchant } from '../../hooks/useMerchant';
 
 // Dynamic import for chart (prevents SSR issues with recharts)
 const OrdersChart = dynamic(() => import('../../components/charts/OrdersChart'), {
@@ -19,7 +19,7 @@ const OrdersChart = dynamic(() => import('../../components/charts/OrdersChart'),
 });
 
 export default function DashboardPage() {
-    const user = useAuthStore((s) => s.user);
+    const { user } = useMerchant();
     const { data, isLoading, error, isFetching } = useQuery<DashboardResponse>({
         // ✅ SECURITY: Scope query key to merchant ID to prevent cross-user data leaks
         queryKey: ['dashboard', user?.merchantProfile?.id || 'anonymous'],
@@ -150,19 +150,65 @@ export default function DashboardPage() {
         );
     }
 
-    // Error state
+    // Error state - show welcome for new users, error for others
     if (error || !data?.success) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        // Check for USER_SYNC_PENDING code or text indicators
+        const errorCode = (error as any)?.response?.data?.error?.code;
+        const errorMsg = (error as any)?.response?.data?.error?.message || errorMessage;
+        const isNewUser = 
+            errorCode === 'USER_SYNC_PENDING' ||
+            errorMessage.includes('not found') || 
+            errorMessage.includes('User not found') ||
+            errorMessage.includes('sync pending');
+
+        // For new users, show a friendly welcome message
+        if (isNewUser) {
+            return (
+                <div className="max-w-7xl mx-auto px-4 py-8">
+                    <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 border-blue-200 dark:border-gray-600">
+                        <div className="text-center py-12">
+                            <div className="text-6xl mb-4">🎉</div>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                Welcome to ShipMVP!
+                            </h2>
+                            <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
+                                {errorCode === 'USER_SYNC_PENDING' 
+                                    ? errorMsg 
+                                    : 'Your account is being set up. This may take a few seconds while we sync your data.'}
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                <button
+                                    onClick={() => window.location.reload()}
+                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-500 hover:to-purple-500 font-medium shadow-lg"
+                                >
+                                    Refresh Dashboard
+                                </button>
+                                <Link
+                                    href="/orders/create"
+                                    className="px-6 py-3 bg-white dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 font-medium border border-gray-200 dark:border-gray-500"
+                                >
+                                    Create First Order
+                                </Link>
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                                If this persists, try signing out and back in.
+                            </p>
+                        </div>
+                    </Card>
+                </div>
+            );
+        }
 
         return (
             <div className="max-w-7xl mx-auto px-4 py-8">
-                <Card className="bg-red-50 border-red-200">
+                <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
                     <div className="text-center py-8">
                         <div className="text-5xl mb-4">⚠️</div>
-                        <h2 className="text-xl font-semibold text-red-900 mb-2">
+                        <h2 className="text-xl font-semibold text-red-900 dark:text-red-200 mb-2">
                             Failed to load dashboard
                         </h2>
-                        <p className="text-red-700 mb-2">{errorMessage}</p>
+                        <p className="text-red-700 dark:text-red-300 mb-2">{errorMessage}</p>
                         <button
                             onClick={() => window.location.reload()}
                             className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
@@ -174,6 +220,7 @@ export default function DashboardPage() {
             </div>
         );
     }
+
 
     const { merchant, stats, recentActivity } = data.data;
 
@@ -306,7 +353,7 @@ export default function DashboardPage() {
 
                 {/* Unpaid invoices alert */}
                 {stats.invoices.unpaid > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex items-center gap-3">
                             <span className="text-2xl">📄</span>
                             <div>
@@ -314,7 +361,7 @@ export default function DashboardPage() {
                                 <p className="text-sm text-red-700">Total due: {formatCurrency(stats.invoices.totalUnpaidAmount)}</p>
                             </div>
                         </div>
-                        <Link href="/invoices" className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700">
+                        <Link href="/invoices" className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 text-center">
                             View Invoices
                         </Link>
                     </div>
@@ -322,7 +369,7 @@ export default function DashboardPage() {
 
                 {/* Pending orders reminder */}
                 {stats.orders.pending > 5 && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex items-center gap-3">
                             <span className="text-2xl">📦</span>
                             <div>
@@ -330,7 +377,7 @@ export default function DashboardPage() {
                                 <p className="text-sm text-blue-700">Schedule a pickup to ship these orders</p>
                             </div>
                         </div>
-                        <Link href="/orders/pickup" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                        <Link href="/orders/pickup" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 text-center">
                             Schedule Pickup
                         </Link>
                     </div>

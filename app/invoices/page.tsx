@@ -133,20 +133,41 @@ export default function InvoicesPage() {
             className="p-6"
         >
             <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Invoices</h1>
-                <p className="text-gray-600 mt-1">View and download your billing invoices</p>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Invoices</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">View and download your billing invoices</p>
             </div>
 
             {isLoading && (
                 <Card>
-                    <div className="text-center py-8 text-gray-600">Loading invoices...</div>
+                    <div className="text-center py-8 text-gray-600 dark:text-gray-400">Loading invoices...</div>
+                </Card>
+            )}
+
+            {/* ✅ Error State */}
+            {!isLoading && error && (
+                <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                    <div className="text-center py-8">
+                        <div className="text-5xl mb-4">⚠️</div>
+                        <p className="text-red-700 dark:text-red-400 font-semibold mb-2">
+                            Failed to load invoices
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                            {(error as any)?.response?.data?.error?.message || 'Please try refreshing the page'}
+                        </p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                            Retry
+                        </button>
+                    </div>
                 </Card>
             )}
 
             {!isLoading && !error && invoices.length === 0 && (
                 <Card>
                     <div className="text-center py-12">
-                        <div className="text-gray-400 mb-4">
+                        <div className="text-gray-400 dark:text-gray-500 mb-4">
                             <svg
                                 className="mx-auto h-12 w-12"
                                 fill="none"
@@ -161,9 +182,9 @@ export default function InvoicesPage() {
                                 />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices yet</h3>
-                        <p className="text-gray-600">Invoices will appear here after billing cycles</p>
-                        <p className="text-sm text-gray-500 mt-2">
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No invoices yet</h3>
+                        <p className="text-gray-600 dark:text-gray-400">Invoices will appear here after billing cycles</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
                             Invoices are generated monthly for your shipping charges
                         </p>
                     </div>
@@ -174,14 +195,14 @@ export default function InvoicesPage() {
                 <div className="space-y-4">
                     {invoices.map((invoice) => (
                         <Card key={invoice.id}>
-                            <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-lg font-semibold text-gray-800">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white truncate">
                                             {invoice.invoiceNumber}
                                         </h3>
                                         <span
-                                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                            className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusColor(
                                                 invoice.status
                                             )}`}
                                         >
@@ -189,15 +210,15 @@ export default function InvoicesPage() {
                     </span>
                                     </div>
 
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-sm">
                                         <div>
-                                            <p className="text-gray-600">Billing Period</p>
-                                            <p className="font-medium text-gray-800">
+                                            <p className="text-gray-600 dark:text-gray-400">Billing Period</p>
+                                            <p className="font-medium text-gray-800 dark:text-gray-200">
                                                 {formatDate(invoice.billingStart)} - {formatDate(invoice.billingEnd)}
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-gray-600">Amount</p>
+                                            <p className="text-gray-600 dark:text-gray-400">Amount</p>
                                             <p className="font-medium text-gray-800">
                                                 ₹{Number(invoice.totalAmount).toFixed(2)}
                                             </p>
@@ -219,7 +240,7 @@ export default function InvoicesPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex gap-2 ml-4">
+                                <div className="flex flex-wrap gap-2 pt-3 lg:pt-0 border-t lg:border-t-0 border-gray-100 dark:border-gray-700">
                                     {/* Pay Invoice Button - Only show if PENDING or OVERDUE */}
                                     {(invoice.status === 'PENDING' || invoice.status === 'OVERDUE') && (
                                         <button
@@ -228,7 +249,7 @@ export default function InvoicesPage() {
                                                 setPaymentInvoice(invoice);
                                             }}
                                             disabled={processingInvoiceId === invoice.id || !!paymentInvoice}
-                                            className={`inline-flex items-center gap-2 px-4 py-2 text-sm text-white rounded shadow-md transition-all font-semibold ${
+                                            className={`inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm text-white rounded shadow-md transition-all font-semibold flex-1 sm:flex-none ${
                                                 processingInvoiceId === invoice.id || paymentInvoice
                                                     ? 'bg-gray-400 cursor-not-allowed'
                                                     : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 hover:scale-105'
@@ -237,12 +258,12 @@ export default function InvoicesPage() {
                                             {processingInvoiceId === invoice.id ? (
                                                 <>
                                                     <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
-                                                    <span>Processing...</span>
+                                                    <span className="hidden sm:inline">Processing...</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <span>💳</span>
-                                                    <span>Pay Invoice</span>
+                                                    <span className="hidden sm:inline">Pay</span>
                                                 </>
                                             )}
                                         </button>
@@ -251,7 +272,7 @@ export default function InvoicesPage() {
                                     {/* Preview Button */}
                                     <button
                                         onClick={() => setSelectedInvoiceId(invoice.id)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 transition-colors"
+                                        className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded border border-gray-300 dark:border-gray-600 transition-colors flex-1 sm:flex-none"
                                     >
                                         <svg
                                             className="w-4 h-4"
@@ -272,23 +293,24 @@ export default function InvoicesPage() {
                                                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                                             />
                                         </svg>
-                                        Preview
+                                        <span className="hidden sm:inline">Preview</span>
                                     </button>
 
+                                    {/* Download Button */}
                                     {/* Download Button */}
                                     <button
                                         onClick={() => downloadInvoice(invoice.id, invoice.invoiceNumber)}
                                         disabled={downloadingInvoiceId === invoice.id}
-                                        className={`inline-flex items-center gap-2 px-4 py-2 text-sm rounded border transition-colors ${
+                                        className={`inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm rounded border transition-colors flex-1 sm:flex-none ${
                                             downloadingInvoiceId === invoice.id
                                                 ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                                                : 'text-blue-600 hover:bg-blue-50 border-blue-200'
+                                                : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 dark:border-blue-700'
                                         }`}
                                     >
                                         {downloadingInvoiceId === invoice.id ? (
                                             <>
                                                 <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></span>
-                                                <span>Generating...</span>
+                                                <span className="hidden sm:inline">Generating...</span>
                                             </>
                                         ) : (
                                             <>
@@ -305,7 +327,7 @@ export default function InvoicesPage() {
                                                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                                                     />
                                                 </svg>
-                                                <span>Download PDF</span>
+                                                <span className="hidden sm:inline">Download</span>
                                             </>
                                         )}
                                     </button>

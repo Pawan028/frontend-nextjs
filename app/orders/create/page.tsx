@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '../../../stores/useAuthStore';
+import { useMerchant } from '../../../hooks/useMerchant';
 import api from '../../../lib/api';
 import Card from '../../../components/ui/Card';
 import Input from '../../../components/ui/Input';
@@ -61,7 +61,7 @@ interface CreateOrderPayload {
 export default function CreateOrderPage() {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const updateWalletBalance = useAuthStore((s) => s.updateWalletBalance);
+    const { updateWalletBalance } = useMerchant();
 
     // Fetch merchant addresses
     const {
@@ -75,11 +75,28 @@ export default function CreateOrderPage() {
             const res = await api.get('/merchant/addresses');
             return res.data;
         },
+        retry: (failureCount, error: any) => {
+            // Retry up to 2 times for USER_SYNC_PENDING errors (rare with JIT provisioning)
+            const errorCode = error?.response?.data?.error?.code;
+            if (errorCode === 'USER_SYNC_PENDING') {
+                return failureCount < 2;
+            }
+            // Retry once for network errors
+            if (!error?.response) {
+                return failureCount < 1;
+            }
+            // Don't retry other errors (404, 403, etc.)
+            return false;
+        },
+        retryDelay: (attemptIndex) => {
+            // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+            return Math.min(1000 * 2 ** attemptIndex, 16000);
+        },
     });
 
     // ✅ CRITICAL FIX: Filter only PICKUP type addresses - backend validates this!
     const allAddresses: MerchantAddress[] = addressesResponse?.data || [];
-    const addresses = allAddresses.filter((addr: any) => 
+    const addresses = allAddresses.filter((addr: any) =>
         addr.type === 'PICKUP' || addr.type === 'WAREHOUSE'
     );
 
@@ -225,7 +242,7 @@ export default function CreateOrderPage() {
                 destPincode,
                 weight: Number(weight),
                 // ✅ FIXED: Send lowercase to match validation schema
-                paymentType: paymentType.toLowerCase(), 
+                paymentType: paymentType.toLowerCase(),
                 dimensions: {
                     length: 10,
                     breadth: 10,
@@ -305,7 +322,7 @@ export default function CreateOrderPage() {
             console.log('📦 Order Payload:', JSON.stringify(payload, null, 2));
             const response = await api.post('/orders', payload);
             console.log('✅ Order Response:', response.data);
-            
+
             // ✅ PRODUCTION FIX: Update wallet balance after order creation
             // Fetch fresh merchant data to get updated balance
             try {
@@ -318,13 +335,13 @@ export default function CreateOrderPage() {
             } catch (balanceError) {
                 console.warn('⚠️ Failed to update wallet balance:', balanceError);
             }
-            
+
             // ✅ Invalidate all wallet and order queries to refetch fresh data
             queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
             queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
             queryClient.invalidateQueries({ queryKey: ['orders'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-            
+
             // 🎉 Fire confetti celebration!
             // Check if this is the first order (check localStorage)
             const hasCreatedOrder = localStorage.getItem('hasCreatedOrder');
@@ -334,7 +351,7 @@ export default function CreateOrderPage() {
             } else {
                 fireSuccessConfetti();
             }
-            
+
             router.push('/orders');
         } catch (err: any) {
             console.error('Create order error:', err);
@@ -342,11 +359,11 @@ export default function CreateOrderPage() {
             console.error('❌ Error message:', err.response?.data?.error?.message);
             console.error('❌ Error code:', err.response?.data?.error?.code);
             console.error('❌ Error details:', err.response?.data?.error?.details);
-            
+
             // Show detailed validation errors if available
             const errorDetails = err.response?.data?.error?.details || err.response?.data?.details;
             const errorMessage = err.response?.data?.error?.message || err.response?.data?.message;
-            
+
             if (errorDetails) {
                 setError(`Validation Error: ${JSON.stringify(errorDetails)}`);
             } else if (err.response?.data?.error?.code === 'INTERNAL_ERROR') {
@@ -377,6 +394,41 @@ export default function CreateOrderPage() {
 
     // Error state for addresses
     if (addressesError) {
+        const errorCode = (addressesErrorData as any)?.response?.data?.error?.code;
+        const errorMessage = (addressesErrorData as any)?.response?.data?.error?.message;
+        const isNewUser = errorCode === 'USER_SYNC_PENDING';
+
+        // Show friendly message for new users still syncing
+        if (isNewUser) {
+            return (
+                <div className="p-6">
+                    <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 border-blue-200 dark:border-gray-600">
+                        <div className="text-center py-12">
+                            <div className="text-6xl mb-4">⏳</div>
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                Setting up your account...
+                            </h3>
+                            <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto">
+                                {errorMessage || 'Your account is being set up. This usually takes just a few seconds.'}
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                <Button onClick={() => window.location.reload()}>
+                                    Check Again
+                                </Button>
+                                <Button variant="secondary" onClick={() => router.push('/dashboard')}>
+                                    Go to Dashboard
+                                </Button>
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                                If this persists, try signing out and back in.
+                            </p>
+                        </div>
+                    </Card>
+                </div>
+            );
+        }
+
+        // Show error for other issues
         return (
             <div className="p-6">
                 <Card>
@@ -384,8 +436,7 @@ export default function CreateOrderPage() {
                         <div className="text-5xl mb-4">⚠️</div>
                         <p className="text-red-600 font-semibold mb-2">Failed to load merchant addresses</p>
                         <p className="text-sm text-gray-600 mb-4">
-                            {(addressesErrorData as any)?.response?.data?.error?.message ||
-                                'Please try refreshing the page'}
+                            {errorMessage || 'Please try refreshing the page'}
                         </p>
                         <Button onClick={() => window.location.reload()}>Retry</Button>
                     </div>
@@ -405,7 +456,7 @@ export default function CreateOrderPage() {
                             No Pickup/Warehouse Addresses Found
                         </h3>
                         <p className="text-gray-600 mb-6">
-                            You need to add at least one PICKUP or WAREHOUSE type address before creating orders. 
+                            You need to add at least one PICKUP or WAREHOUSE type address before creating orders.
                             {allAddresses.length > 0 && ` (Found ${allAddresses.length} address(es), but none are PICKUP/WAREHOUSE type)`}
                         </p>
                         <Button onClick={() => router.push('/settings/addresses')}>
@@ -444,9 +495,8 @@ export default function CreateOrderPage() {
                                 setPickupAddressId(e.target.value);
                                 setValidationErrors((prev) => ({ ...prev, pickupAddressId: '' }));
                             }}
-                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                validationErrors.pickupAddressId ? 'border-red-500' : 'border-gray-300'
-                            }`}
+                            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${validationErrors.pickupAddressId ? 'border-red-500' : 'border-gray-300'
+                                }`}
                         >
                             <option value="">-- Select Pickup Address --</option>
                             {addresses.map((addr) => (
@@ -606,7 +656,7 @@ export default function CreateOrderPage() {
                         placeholder="e.g., Near City Mall"
                     />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Input
                             label="City *"
                             type="text"

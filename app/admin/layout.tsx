@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '../../stores/useAuthStore';
-import Link from 'next/link';
+import { useMerchant } from '../../hooks/useMerchant';
 
 export default function AdminLayout({
     children,
@@ -11,21 +10,21 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     const router = useRouter();
-    const { user, isInitialized } = useAuthStore();
+    const { user, isLoading } = useMerchant();
     const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
-        if (!isInitialized) return;
+        if (isLoading) return;
 
         if (!user || user.role !== 'ADMIN') {
             console.log('⛔ Access denied: Not an admin');
-            router.push('/dashboard'); // or /auth
+            router.push('/dashboard');
         } else {
             setIsAuthorized(true);
         }
-    }, [user, isInitialized, router]);
+    }, [user, isLoading, router]);
 
-    if (!isInitialized || !isAuthorized) {
+    if (isLoading || !isAuthorized) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
@@ -35,7 +34,6 @@ export default function AdminLayout({
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Admin Navigation Header if needed, or rely on main Navbar */}
             {children}
         </div>
     );

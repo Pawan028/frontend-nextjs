@@ -8,7 +8,7 @@ import api from '../../lib/api';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { formatCurrency, formatDate } from '../../utils/format';
-import { useAuthStore } from '../../stores/useAuthStore';
+import { useMerchant } from '../../hooks/useMerchant';
 import PaymentIntentModal from '../../components/PaymentIntentModal';  // ✅ NEW: Payment Intent Modal
 
 interface Transaction {
@@ -20,22 +20,24 @@ interface Transaction {
     createdAt: string;
 }
 
-interface WalletResponse {
+interface WalletTransactionsResponse {
     success: boolean;
-    data: {
-        balance: number;
-        transactions: Transaction[];
+    data: Transaction[];  // Direct array, not nested
+    pagination?: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
     };
 }
 
 export default function WalletPage() {
-    const user = useAuthStore((s) => s.user);
-    const updateWalletBalance = useAuthStore((s) => s.updateWalletBalance);
+    const { user, updateWalletBalance } = useMerchant();
     const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
     const [topupAmount, setTopupAmount] = useState(1000); // Default amount
 
     // ✅ PRODUCTION FIX: Fetch live balance from API for accuracy
-    const { data: balanceResponse, isLoading: balanceLoading } = useQuery({
+    const { data: balanceResponse, isLoading: balanceLoading, error: balanceError } = useQuery({
         queryKey: ['wallet-balance'],
         queryFn: async () => {
             const res = await api.get('/wallet/balance');
@@ -50,7 +52,7 @@ export default function WalletPage() {
         refetchOnWindowFocus: true, // Refetch when user returns to tab
     });
 
-    const { data: transactionsResponse, isLoading: transactionsLoading } = useQuery<WalletResponse>({
+    const { data: transactionsResponse, isLoading: transactionsLoading, error: transactionsError } = useQuery<WalletTransactionsResponse>({
         queryKey: ['wallet-transactions'],
         queryFn: async () => {
             const res = await api.get('/wallet/transactions');
@@ -59,11 +61,37 @@ export default function WalletPage() {
     });
 
     const walletBalance = balanceResponse?.data?.balance ?? user?.merchantProfile?.walletBalance ?? 0;
-    const transactions = transactionsResponse?.data?.transactions || [];
+    // ✅ FIX: Backend returns data as direct array, not nested under 'transactions'
+    const transactions = transactionsResponse?.data || [];
     const isLoading = balanceLoading || transactionsLoading;
+    const hasError = balanceError || transactionsError;
+
+    // ✅ Error state
+    if (hasError && !isLoading) {
+        return (
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                    <div className="text-center py-8">
+                        <div className="text-5xl mb-4">⚠️</div>
+                        <p className="text-red-700 dark:text-red-400 font-semibold mb-2">
+                            Failed to load wallet data
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                            {(balanceError as any)?.response?.data?.error?.message || 
+                             (transactionsError as any)?.response?.data?.error?.message ||
+                             'Please try refreshing the page'}
+                        </p>
+                        <Button onClick={() => window.location.reload()}>
+                            Retry
+                        </Button>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
     return (
-        <motion.div 
+        <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -71,16 +99,16 @@ export default function WalletPage() {
         >
             {/* Header */}
             <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">Wallet</h1>
-                <p className="text-gray-600 mt-1">Manage your wallet balance and transactions</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Wallet</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">Manage your wallet balance and transactions</p>
             </div>
 
             {/* Wallet Balance Card */}
             <Card className="mb-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div>
                         <p className="text-blue-100 text-sm mb-1">Available Balance</p>
-                        <h2 className="text-4xl font-bold">{formatCurrency(walletBalance)}</h2>
+                        <h2 className="text-3xl sm:text-4xl font-bold">{formatCurrency(walletBalance)}</h2>
                     </div>
                     <div className="flex items-center gap-3">
                         <input
@@ -95,10 +123,10 @@ export default function WalletPage() {
                         />
                         <button
                             onClick={() => setIsTopupModalOpen(true)}
-                            className="bg-white text-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2 sm:px-6 sm:py-3 font-semibold shadow-lg transition-all hover:scale-105 flex items-center gap-2"
+                            className="w-full sm:w-auto bg-white text-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2 sm:px-6 sm:py-3 font-semibold shadow-lg transition-all hover:scale-105 flex items-center justify-center gap-2"
                         >
                             <span className="text-2xl">💰</span>
-                            <span className="hidden sm:inline">Top Up Wallet</span>
+                            <span>Top Up</span>
                         </button>
                     </div>
                 </div>
@@ -111,8 +139,8 @@ export default function WalletPage() {
                     <h2 className="text-xl font-semibold text-gray-900">Transaction History</h2>
                     {transactions.length > 0 && (
                         <span className="text-sm text-gray-600">
-              {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
-            </span>
+                            {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+                        </span>
                     )}
                 </div>
 
@@ -137,9 +165,8 @@ export default function WalletPage() {
                             >
                                 <div className="flex items-center gap-3">
                                     <div
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                            tx.type === 'CREDIT' ? 'bg-green-100' : 'bg-red-100'
-                                        }`}
+                                        className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'CREDIT' ? 'bg-green-100' : 'bg-red-100'
+                                            }`}
                                     >
                                         {tx.type === 'CREDIT' ? '⬇️' : '⬆️'}
                                     </div>
@@ -150,9 +177,8 @@ export default function WalletPage() {
                                 </div>
                                 <div className="text-right">
                                     <p
-                                        className={`text-lg font-semibold ${
-                                            tx.type === 'CREDIT' ? 'text-green-600' : 'text-red-600'
-                                        }`}
+                                        className={`text-lg font-semibold ${tx.type === 'CREDIT' ? 'text-green-600' : 'text-red-600'
+                                            }`}
                                     >
                                         {tx.type === 'CREDIT' ? '+' : '-'}
                                         {formatCurrency(tx.amount)}

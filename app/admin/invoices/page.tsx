@@ -146,6 +146,20 @@ export default function AdminInvoicesPage() {
                 </Card>
             )}
 
+            {/* Error State */}
+            {!isLoading && error && (
+                <Card className="bg-red-50 border-red-200">
+                    <div className="text-center py-8">
+                        <div className="text-5xl mb-4">⚠️</div>
+                        <p className="text-red-700 font-semibold mb-2">Failed to load invoices</p>
+                        <p className="text-gray-600 text-sm mb-4">
+                            {(error as any)?.response?.data?.error?.message || 'Please try refreshing the page'}
+                        </p>
+                        <Button onClick={() => window.location.reload()}>Retry</Button>
+                    </div>
+                </Card>
+            )}
+
             {/* Empty State */}
             {!isLoading && !error && invoices.length === 0 && (
                 <Card>

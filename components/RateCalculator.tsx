@@ -110,35 +110,108 @@ export default function RateCalculator() {
     },
   });
 
+  // Validation state for better error messages
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   const handleCalculate = async () => {
+    setValidationError(null);
+
+    // Validate required fields
     if (!originPincode || !destPincode || !weight) {
+      setValidationError('Please fill in all required fields');
+      return;
+    }
+
+    // Validate pincode format (must be exactly 6 digits)
+    if (!/^\d{6}$/.test(originPincode)) {
+      setValidationError('Pickup pincode must be exactly 6 digits');
+      return;
+    }
+    if (!/^\d{6}$/.test(destPincode)) {
+      setValidationError('Delivery pincode must be exactly 6 digits');
+      return;
+    }
+
+    // Validate weight
+    const weightNum = parseFloat(weight);
+    if (isNaN(weightNum) || weightNum <= 0) {
+      setValidationError('Weight must be a positive number');
       return;
     }
 
     setShowResults(true);
     setSelectedRate(null);
 
-    // Check serviceability
-    await serviceabilityMutation.mutateAsync({
-      pickupPincode: originPincode,
-      deliveryPincode: destPincode,
-      paymentType,
-    });
+    try {
+      // Check serviceability
+      await serviceabilityMutation.mutateAsync({
+        pickupPincode: originPincode,
+        deliveryPincode: destPincode,
+        paymentType,
+      });
 
-    // Get rates
-    await ratesMutation.mutateAsync({
-      originPincode,
-      destPincode,
-      weight: parseInt(weight),
-      paymentType,
-      codAmount: paymentType === 'cod' ? parseInt(codAmount) || 0 : undefined,
-      length: length ? parseInt(length) : undefined,
-      breadth: breadth ? parseInt(breadth) : undefined,
-      height: height ? parseInt(height) : undefined,
-    });
+      // Get rates
+      await ratesMutation.mutateAsync({
+        originPincode,
+        destPincode,
+        weight: weightNum,
+        paymentType,
+        codAmount: paymentType === 'cod' ? parseFloat(codAmount) || 0 : undefined,
+        length: length ? parseFloat(length) : undefined,
+        breadth: breadth ? parseFloat(breadth) : undefined,
+        height: height ? parseFloat(height) : undefined,
+      });
+    } catch (error: any) {
+      // Error is already captured by mutation state
+      console.error('Rate calculation error:', error?.response?.data || error);
+    }
   };
 
   const isLoading = serviceabilityMutation.isPending || ratesMutation.isPending;
+  const hasError = validationError || serviceabilityMutation.isError || ratesMutation.isError;
+  
+  // Extract error message from backend response
+  const getErrorMessage = (error: any): string => {
+    const responseData = error?.response?.data;
+    
+    // Handle Fastify validation errors with details
+    if (responseData?.error?.code === 'VALIDATION_ERROR' && responseData?.error?.details) {
+      const details = responseData.error.details;
+      if (Array.isArray(details) && details.length > 0) {
+        // Format validation messages nicely
+        return details.map((d: any) => {
+          const field = d.instancePath?.replace('/', '') || d.params?.missingProperty || 'field';
+          const msg = d.message || 'is invalid';
+          return `${field}: ${msg}`;
+        }).join(', ');
+      }
+    }
+    
+    // Handle standard error format
+    if (responseData?.error?.message) {
+      return responseData.error.message;
+    }
+    
+    // Handle plain message
+    if (responseData?.message) {
+      return responseData.message;
+    }
+    
+    // Handle validation array (legacy)
+    if (Array.isArray(responseData?.error)) {
+      return responseData.error.map((e: any) => e.message || e).join(', ');
+    }
+    
+    return 'An error occurred. Please try again.';
+  };
+
+  const errorMessage = validationError
+    ? validationError
+    : serviceabilityMutation.error 
+    ? getErrorMessage(serviceabilityMutation.error)
+    : ratesMutation.error 
+    ? getErrorMessage(ratesMutation.error)
+    : null;
   const serviceability = serviceabilityMutation.data;
   const rates = ratesMutation.data || [];
 
@@ -268,6 +341,15 @@ export default function RateCalculator() {
         </div>
       </div>
 
+      {/* Validation Error (shows immediately) */}
+      {validationError && (
+        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 mb-4">
+          <p className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+            <span>⚠️</span> {validationError}
+          </p>
+        </div>
+      )}
+
       <Button
         onClick={handleCalculate}
         disabled={isLoading || !originPincode || !destPincode || !weight}
@@ -279,6 +361,27 @@ export default function RateCalculator() {
       {/* Results */}
       {showResults && (
         <div className="mt-6 space-y-4">
+          {/* Error State */}
+          {hasError && !isLoading && (
+            <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">⚠️</span>
+                <span className="font-semibold text-red-800 dark:text-red-300">
+                  Unable to Calculate Rates
+                </span>
+              </div>
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {errorMessage}
+              </p>
+              <button
+                onClick={handleCalculate}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
           {/* Serviceability Status */}
           {serviceability && (
             <div className={`p-4 rounded-lg ${serviceability.serviceable ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'}`}>

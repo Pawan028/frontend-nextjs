@@ -12,6 +12,10 @@ import ThemeToggle from '@/components/ThemeToggle';
 import HeroWidgets from '@/components/home/HeroWidgets';
 import IntegrationMarquee from '@/components/home/IntegrationMarquee';
 import FeatureBento from '@/components/home/FeatureBento';
+import HowItWorks from '@/components/home/HowItWorks';
+import Testimonials from '@/components/home/Testimonials';
+import FAQ from '@/components/home/FAQ';
+import CTASection from '@/components/home/CTASection';
 import { motion } from 'framer-motion';
 
 // Animated counter hook
@@ -80,11 +84,11 @@ export default function HomePage() {
 
               {/* Desktop Auth Buttons */}
               <div className="hidden md:flex items-center gap-3">
-                <Link href="/auth" className="text-sm font-medium text-gray-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white transition-colors">
+                <Link href="/sign-in" className="text-sm font-medium text-gray-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white transition-colors">
                   Login
                 </Link>
                 <Link
-                  href="/auth/register"
+                  href="/sign-up"
                   className="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-semibold hover:shadow-lg hover:-translate-y-0.5 transition-all"
                 >
                   Get Started
@@ -137,14 +141,14 @@ export default function HomePage() {
                 </a>
                 <hr className="my-2 border-gray-100 dark:border-slate-800" />
                 <Link
-                  href="/auth"
+                  href="/sign-in"
                   onClick={() => setMobileMenuOpen(false)}
                   className="px-4 py-3 text-center text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-900 rounded-lg transition-colors font-medium"
                 >
                   Login
                 </Link>
                 <Link
-                  href="/auth/register"
+                  href="/sign-up"
                   onClick={() => setMobileMenuOpen(false)}
                   className="mx-4 py-3 bg-blue-600 text-white rounded-lg text-center font-medium shadow-lg shadow-blue-500/20"
                 >
@@ -183,7 +187,7 @@ export default function HomePage() {
 
               <div className="flex flex-wrap items-center gap-4">
                 <Link
-                  href="/auth/register"
+                  href="/sign-up"
                   className="px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold hover:shadow-xl hover:-translate-y-1 transition-all"
                 >
                   Start Shipping Free
@@ -212,46 +216,118 @@ export default function HomePage() {
       {/* Integration Marquee */}
       <IntegrationMarquee />
 
-      {/* Stats Section with Framer Motion (reusing counters but simpler layout) */}
+      {/* Stats Section with Icons */}
       <section className="py-20 relative">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div ref={shipments.ref} className="text-center p-8 rounded-3xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-gray-100 dark:border-slate-800">
-              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <motion.div 
+              ref={shipments.ref} 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center p-8 rounded-3xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-100 dark:border-slate-800 hover:shadow-lg transition-shadow"
+            >
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <svg className="w-7 h-7 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-1">
                 {shipments.count.toLocaleString()}+
               </div>
-              <div className="text-gray-500 dark:text-slate-400 font-medium">Monthly Shipments</div>
-            </div>
-            <div ref={avgDelivery.ref} className="text-center p-8 rounded-3xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-gray-100 dark:border-slate-800">
-              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-gray-500 dark:text-slate-400 font-medium text-sm">Monthly Shipments</div>
+            </motion.div>
+            
+            <motion.div 
+              ref={avgDelivery.ref} 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-center p-8 rounded-3xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-100 dark:border-slate-800 hover:shadow-lg transition-shadow"
+            >
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <svg className="w-7 h-7 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-1">
                 {(avgDelivery.count / 10).toFixed(1)} Days
               </div>
-              <div className="text-gray-500 dark:text-slate-400 font-medium">Avg. Delivery Time</div>
-            </div>
-            <div ref={costSavings.ref} className="text-center p-8 rounded-3xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm border border-gray-100 dark:border-slate-800">
-              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+              <div className="text-gray-500 dark:text-slate-400 font-medium text-sm">Avg. Delivery Time</div>
+            </motion.div>
+            
+            <motion.div 
+              ref={costSavings.ref} 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-center p-8 rounded-3xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-100 dark:border-slate-800 hover:shadow-lg transition-shadow"
+            >
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <svg className="w-7 h-7 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-1">
                 {costSavings.count}%
               </div>
-              <div className="text-gray-500 dark:text-slate-400 font-medium">Shipping Cost Savings</div>
-            </div>
+              <div className="text-gray-500 dark:text-slate-400 font-medium text-sm">Cost Savings</div>
+            </motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="text-center p-8 rounded-3xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-gray-100 dark:border-slate-800 hover:shadow-lg transition-shadow"
+            >
+              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                <svg className="w-7 h-7 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="text-4xl font-bold text-gray-900 dark:text-white mb-1">
+                98%
+              </div>
+              <div className="text-gray-500 dark:text-slate-400 font-medium text-sm">Customer Satisfaction</div>
+            </motion.div>
           </div>
         </div>
       </section>
+
+      {/* How It Works */}
+      <HowItWorks />
 
       {/* Bento Grid Features */}
       <section id="features" className="py-24 px-4 bg-gradient-to-b from-transparent to-blue-50/50 dark:to-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Everything you need to <span className="text-blue-600 dark:text-blue-400">Scale Faster</span>
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
-              Powerful tools designed to simplify logistics, reduce costs, and delight your customers at every touchpoint.
-            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="inline-block px-4 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-semibold mb-4">
+                Features
+              </span>
+              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Everything you need to <span className="text-blue-600 dark:text-blue-400">Scale Faster</span>
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
+                Powerful tools designed to simplify logistics, reduce costs, and delight your customers at every touchpoint.
+              </p>
+            </motion.div>
           </div>
           <FeatureBento />
         </div>
       </section>
+
+      {/* Testimonials */}
+      <Testimonials />
 
       {/* Nationwide Reach Section (Replaces Global) */}
       <section id="reach" className="py-24 px-4 relative overflow-hidden">
@@ -336,7 +412,7 @@ export default function HomePage() {
                 ))}
               </ul>
               <Link
-                href="/auth/register"
+                href="/sign-up"
                 className="block w-full py-4 text-center bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl font-bold text-gray-900 dark:text-white transition-all"
               >
                 Get Started
@@ -365,7 +441,7 @@ export default function HomePage() {
                 ))}
               </ul>
               <Link
-                href="/auth/register"
+                href="/sign-up"
                 className="block w-full py-4 text-center bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/30"
               >
                 Start Free Trial
@@ -375,52 +451,70 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <FAQ />
+
+      {/* CTA Section */}
+      <CTASection />
+
       {/* Footer */}
-      <footer className="py-12 px-4 bg-gray-50 dark:bg-slate-950 border-t border-gray-200 dark:border-slate-800">
+      <footer className="py-16 px-4 bg-gray-900 dark:bg-black text-white">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-12">
-            <div className="col-span-1 md:col-span-1">
-              <div className="text-xl font-bold text-gray-900 dark:text-white mb-4">ShipMVP</div>
-              <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                Empowering D2C brands with smart logistics solutions. Ship smarter, faster, and cheaper within India.
+          <div className="grid md:grid-cols-5 gap-8 mb-12">
+            <div className="col-span-2">
+              <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-4">ShipMVP</div>
+              <p className="text-gray-400 leading-relaxed mb-6 max-w-sm">
+                Empowering D2C brands with smart logistics solutions. Ship smarter, faster, and cheaper across India.
               </p>
+              {/* Social Icons */}
+              <div className="flex gap-4">
+                <a href="#" className="w-10 h-10 rounded-full bg-gray-800 hover:bg-blue-600 flex items-center justify-center transition-colors">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg>
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full bg-gray-800 hover:bg-blue-600 flex items-center justify-center transition-colors">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+                <a href="#" className="w-10 h-10 rounded-full bg-gray-800 hover:bg-pink-600 flex items-center justify-center transition-colors">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+              </div>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Product</h4>
-              <ul className="space-y-3 text-sm text-gray-500 dark:text-slate-400">
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Integrations</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">API</a></li>
+              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <ul className="space-y-3 text-sm text-gray-400">
+                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">API Docs</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Company</h4>
-              <ul className="space-y-3 text-sm text-gray-500 dark:text-slate-400">
-                <li><a href="#" className="hover:text-blue-600 transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Contact</a></li>
+              <h4 className="font-semibold text-white mb-4">Company</h4>
+              <ul className="space-y-3 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Legal</h4>
-              <ul className="space-y-3 text-sm text-gray-500 dark:text-slate-400">
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Cookie Policy</a></li>
+              <h4 className="font-semibold text-white mb-4">Legal</h4>
+              <ul className="space-y-3 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Refund Policy</a></li>
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-gray-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-gray-500 dark:text-slate-400">
-              © 2025 ShipMVP. All rights reserved.
+          
+          <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-gray-400">
+              © 2026 ShipMVP. All rights reserved. Made with ❤️ in India
             </div>
-            <div className="flex gap-6">
-              {/* Social Icons Placeholder */}
-              <a href="#" className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">Twitter</a>
-              <a href="#" className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">LinkedIn</a>
-              <a href="#" className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">Instagram</a>
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              All systems operational
             </div>
           </div>
         </div>

@@ -57,11 +57,27 @@ export default function AddressesPage() {
     const [formData, setFormData] = useState<AddressFormData>(initialFormData);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const { data: response, isLoading } = useQuery({
+    const { data: response, isLoading, error: fetchError } = useQuery({
         queryKey: ['addresses'],
         queryFn: async () => {
             const res = await api.get('/merchant/addresses');
             return res.data;
+        },
+        retry: (failureCount, error: any) => {
+            // Retry up to 2 times for USER_SYNC_PENDING errors (rare with JIT provisioning)
+            const errorCode = error?.response?.data?.error?.code;
+            if (errorCode === 'USER_SYNC_PENDING') {
+                return failureCount < 2;
+            }
+            // Retry once for network errors
+            if (!error?.response) {
+                return failureCount < 1;
+            }
+            return false;
+        },
+        retryDelay: (attemptIndex) => {
+            // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+            return Math.min(1000 * 2 ** attemptIndex, 16000);
         },
     });
 
@@ -194,6 +210,28 @@ export default function AddressesPage() {
 
     if (isLoading) {
          return <div className="p-8 text-center">Loading addresses...</div>;
+    }
+
+    // ✅ Error State
+    if (fetchError) {
+        return (
+            <div className="max-w-6xl mx-auto px-4 py-8">
+                <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                    <div className="text-center py-8">
+                        <div className="text-5xl mb-4">⚠️</div>
+                        <p className="text-red-700 dark:text-red-400 font-semibold mb-2">
+                            Failed to load addresses
+                        </p>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                            {(fetchError as any)?.response?.data?.error?.message || 'Please try refreshing the page'}
+                        </p>
+                        <Button onClick={() => window.location.reload()}>
+                            Retry
+                        </Button>
+                    </div>
+                </Card>
+            </div>
+        );
     }
 
     return (

@@ -127,11 +127,24 @@ export default function OrdersPage() {
   }
 
   if (error) {
+    const errorMessage = (error as any)?.response?.data?.error?.message || 'Unknown error occurred';
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <Card className="bg-red-50 border-red-200">
+        <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
           <div className="text-center py-8">
-            <p className="text-red-700">Error loading orders. Please try again.</p>
+            <div className="text-5xl mb-4">⚠️</div>
+            <p className="text-red-700 dark:text-red-400 font-semibold mb-2">
+              Error loading orders
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+              {errorMessage}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Retry
+            </button>
           </div>
         </Card>
       </div>
@@ -161,13 +174,13 @@ export default function OrdersPage() {
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className="max-w-7xl mx-auto px-4 py-8"
     >
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-          <p className="text-gray-600 mt-1">Manage and track your shipments</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Orders</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1 text-sm sm:text-base">Manage and track your shipments</p>
         </div>
-        <Link href="/orders/create">
-          <Button>+ Create Order</Button>
+        <Link href="/orders/create" className="w-full sm:w-auto">
+          <Button className="w-full sm:w-auto">+ Create Order</Button>
         </Link>
       </div>
 
@@ -175,7 +188,7 @@ export default function OrdersPage() {
       <Card className="mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search</label>
             <input
               type="text"
               placeholder="Search by order number or AWB..."
@@ -184,18 +197,18 @@ export default function OrdersPage() {
                 setSearchQuery(e.target.value);
                 setPage(1); // Reset to first page on search
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Status</label>
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(1); // Reset to first page on filter change
               }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {statusOptions.map(option => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -224,7 +237,7 @@ export default function OrdersPage() {
                 <div className="flex-1 min-w-0">
                   {/* Header with order number and badges */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
                       {order.orderNumber}
                     </h3>
                     <span
@@ -246,14 +259,14 @@ export default function OrdersPage() {
                     {order.deliveryAddress && (
                       <>
                         <div className="flex flex-wrap gap-1">
-                          <span className="text-gray-500">Recipient:</span>
-                          <span className="text-gray-900 font-medium truncate">
+                          <span className="text-gray-500 dark:text-gray-400">Recipient:</span>
+                          <span className="text-gray-900 dark:text-white font-medium truncate">
                             {order.deliveryAddress.name}
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-1">
-                          <span className="text-gray-500">Location:</span>
-                          <span className="text-gray-900">
+                          <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                          <span className="text-gray-900 dark:text-gray-200">
                             {order.deliveryAddress.city}, {order.deliveryAddress.pincode}
                           </span>
                         </div>
@@ -262,7 +275,7 @@ export default function OrdersPage() {
                     {order.shipment && (
                       <>
                         <div className="flex flex-wrap gap-1 items-center">
-                          <span className="text-gray-500">Courier:</span>
+                          <span className="text-gray-500 dark:text-gray-400">Courier:</span>
                           <CarrierBadge
                             carrier={order.shipment.courier || 'Unknown'}
                             size="sm"
@@ -270,8 +283,8 @@ export default function OrdersPage() {
                           />
                         </div>
                         <div className="flex flex-wrap gap-1 items-center">
-                          <span className="text-gray-500">AWB:</span>
-                          <span className="text-gray-900 font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                          <span className="text-gray-500 dark:text-gray-400">AWB:</span>
+                          <span className="text-gray-900 dark:text-white font-mono text-xs bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
                             {order.shipment.awb}
                           </span>
                         </div>
@@ -279,15 +292,15 @@ export default function OrdersPage() {
                     )}
                     {!order.shipment && order.trackingNumber && (
                       <div className="flex flex-wrap gap-1 items-center">
-                        <span className="text-gray-500">Tracking:</span>
-                        <span className="text-gray-900 font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">
+                        <span className="text-gray-500 dark:text-gray-400">Tracking:</span>
+                        <span className="text-gray-900 dark:text-white font-mono text-xs bg-gray-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">
                           {order.trackingNumber}
                         </span>
                       </div>
                     )}
                   </div>
                   
-                  <div className="mt-2 text-xs text-gray-500">
+                  <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     Created: {formatDate(order.createdAt)}
                   </div>
 
@@ -322,8 +335,8 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Amount section - full width on mobile */}
-                <div className="flex sm:flex-col justify-between sm:justify-start items-center sm:items-end pt-3 sm:pt-0 border-t sm:border-t-0 sm:ml-4">
-                  <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                <div className="flex sm:flex-col justify-between sm:justify-start items-center sm:items-end pt-3 sm:pt-0 border-t dark:border-slate-700 sm:border-t-0 sm:ml-4">
+                  <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                     {formatCurrency(order.invoiceAmount)}
                   </div>
                   <Link 
@@ -342,8 +355,8 @@ export default function OrdersPage() {
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
         <Card className="mt-6">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
               Showing {orders.length} of {pagination.total} orders (Page {pagination.page} of {pagination.totalPages})
             </div>
             <div className="flex gap-2">
@@ -353,7 +366,7 @@ export default function OrdersPage() {
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1 || isLoading}
               >
-                ← Previous
+                ← Prev
               </Button>
               <Button
                 variant="secondary"

@@ -60,11 +60,11 @@ function CancelOrderButton({ orderId, orderNumber }: { orderId: string; orderNum
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <Card className="w-full max-w-md">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Cancel Order?</h3>
-                <p className="text-gray-600 mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Cancel Order?</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Are you sure you want to cancel order <strong>{orderNumber}</strong>?
                 </p>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     For prepaid orders, the shipping charges will be automatically refunded to your wallet.
                 </p>
                 
@@ -72,7 +72,7 @@ function CancelOrderButton({ orderId, orderNumber }: { orderId: string; orderNum
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="Reason for cancellation (optional)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white rounded-lg mb-4 text-sm"
                     rows={3}
                 />
 
@@ -179,9 +179,9 @@ export default function OrderDetailPage() {
         return (
             <div className="max-w-5xl mx-auto px-4 py-8">
                 <div className="animate-pulse space-y-4">
-                    <div className="h-8 bg-gray-200 rounded w-64" />
-                    <div className="h-64 bg-gray-200 rounded" />
-                    <div className="h-48 bg-gray-200 rounded" />
+                    <div className="h-8 bg-gray-200 dark:bg-slate-700 rounded w-64" />
+                    <div className="h-64 bg-gray-200 dark:bg-slate-700 rounded" />
+                    <div className="h-48 bg-gray-200 dark:bg-slate-700 rounded" />
                 </div>
             </div>
         );
@@ -190,9 +190,9 @@ export default function OrderDetailPage() {
     if (error || !order) {
         return (
             <div className="max-w-5xl mx-auto px-4 py-8">
-                <Card className="bg-red-50 border-red-200">
+                <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
                     <div className="text-center py-8">
-                        <p className="text-red-700 mb-4">Failed to load order details</p>
+                        <p className="text-red-700 dark:text-red-400 mb-4">Failed to load order details</p>
                         <Button onClick={() => router.back()} variant="secondary">
                             ← Go Back
                         </Button>
@@ -210,8 +210,8 @@ export default function OrderDetailPage() {
                     <Button onClick={() => router.back()} variant="secondary" size="sm">
                         ← Back to Orders
                     </Button>
-                    <h1 className="text-3xl font-bold text-gray-900 mt-3">{order.orderNumber}</h1>
-                    <p className="text-gray-600 mt-1">Order Details & Tracking</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mt-3">{order.orderNumber}</h1>
+                    <p className="text-gray-600 dark:text-gray-400 mt-1">Order Details & Tracking</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
@@ -229,19 +229,19 @@ export default function OrderDetailPage() {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Order Summary */}
                     <Card>
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">📋 Order Summary</h2>
+                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">📋 Order Summary</h2>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <p className="text-gray-600">Order Number</p>
-                                <p className="font-medium text-gray-900">{order.orderNumber}</p>
+                                <p className="text-gray-600 dark:text-gray-400">Order Number</p>
+                                <p className="font-medium text-gray-900 dark:text-white">{order.orderNumber}</p>
                             </div>
                             <div>
-                                <p className="text-gray-600">Created On</p>
-                                <p className="font-medium text-gray-900">{formatDate(order.createdAt)}</p>
+                                <p className="text-gray-600 dark:text-gray-400">Created On</p>
+                                <p className="font-medium text-gray-900 dark:text-white">{formatDate(order.createdAt)}</p>
                             </div>
                             <div>
-                                <p className="text-gray-600">Payment Type</p>
-                                <p className="font-medium text-gray-900">
+                                <p className="text-gray-600 dark:text-gray-400">Payment Type</p>
+                                <p className="font-medium text-gray-900 dark:text-white">
                                     {order.paymentType}
                                     {order.paymentType === 'COD' && order.codAmount && (
                                         <span className="text-orange-600 ml-2">

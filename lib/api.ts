@@ -1,7 +1,5 @@
 // lib/api.ts
-import { useAuthStore } from '@/stores/useAuthStore';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 // Toast notification helper - will dispatch custom events for toast component
 const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'error') => {
@@ -22,13 +20,29 @@ const api = axios.create({
     timeout: 30000,
 });
 
+/**
+ * Token getter function - set by ClerkTokenProvider
+ * This allows the axios interceptor to get Clerk's token without importing Clerk
+ * (which would require 'use client' and break server-side usage)
+ */
+let tokenGetter: (() => Promise<string | null>) | null = null;
 
-// Request interceptor - automatically add token from cookies
+export const setTokenGetter = (getter: () => Promise<string | null>) => {
+    tokenGetter = getter;
+};
+
+// Request interceptor - automatically add Clerk token
 api.interceptors.request.use(
-    (config) => {
-        const token = Cookies.get('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+    async (config) => {
+        if (tokenGetter) {
+            try {
+                const token = await tokenGetter();
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+            } catch (error) {
+                console.warn('Failed to get auth token:', error);
+            }
         }
         return config;
     },
@@ -45,7 +59,7 @@ api.interceptors.response.use(
         const errorCode = error.response?.data?.error?.code;
         const errorMessage = error.response?.data?.error?.message;
 
-        // Handle specific error codes (✅ FIXED: WITH UNDERSCORES)
+        // Handle specific error codes
         if (errorCode === 'INSUFFICIENT_BALANCE') {
             console.warn('💰 Insufficient wallet balance');
             // Dispatch topup modal event
@@ -59,13 +73,19 @@ api.interceptors.response.use(
             );
         }
 
+        // Handle USER_SYNC_PENDING first (before checking status)
+        if (errorCode === 'USER_SYNC_PENDING') {
+            console.warn('⏳ User sync pending - account setup in progress');
+            // Don't redirect, let the calling component handle it
+            return Promise.reject(error);
+        }
+
+        // Handle other 401 errors with redirect
         if (errorCode === 'UNAUTHORIZED' || error.response?.status === 401) {
-            console.warn('🔐 Unauthorized - clearing auth');
-            const { logout } = useAuthStore.getState();
-            logout();
-            // Redirect to login
-            if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth')) {
-                window.location.href = '/auth';
+            console.warn('🔐 Unauthorized - redirecting to sign-in');
+            // Redirect to Clerk sign-in
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/sign-in')) {
+                window.location.href = '/sign-in';
             }
         }
 
@@ -90,7 +110,7 @@ api.interceptors.response.use(
             console.error('⚠️ Internal server error');
         }
 
-        // ✅ Generic error dispatch for ErrorBoundary
+        // Generic error dispatch for ErrorBoundary
         if (
             errorCode !== 'INSUFFICIENT_BALANCE' &&
             errorCode !== 'UNAUTHORIZED' &&

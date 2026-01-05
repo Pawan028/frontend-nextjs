@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api, { showToast } from '../lib/api';
 import Button from './ui/Button';
 import Input from './ui/Input';
-import { useAuthStore } from '../stores/useAuthStore';
+import { useMerchant } from '../hooks/useMerchant';
 
 interface WalletTopupModalProps {
     isOpen: boolean;
@@ -17,14 +17,14 @@ export default function WalletTopupModal({ isOpen, onClose, currentBalance }: Wa
     const [amount, setAmount] = useState('');
     const [error, setError] = useState('');
     const queryClient = useQueryClient();
-    const updateWalletBalance = useAuthStore((s) => s.updateWalletBalance);  // ✅ ADD THIS
+    const { updateWalletBalance } = useMerchant();
 
     const topupMutation = useMutation({
         mutationFn: async (amount: number) => {
             // ✅ LIVE: Backend implemented POST /v1/wallet/topup (Phase 1)
             // Requires amount and reference object (type, id, description)
             // Returns: newBalance, transaction info, fully auth-protected
-            
+
             const response = await api.post('/wallet/topup', {
                 amount,
                 reference: {
@@ -57,11 +57,11 @@ export default function WalletTopupModal({ isOpen, onClose, currentBalance }: Wa
         },
         onError: (err: any, variables) => {
             console.error('❌ Top-up error:', err.response?.data);
-            
+
             // ✅ ROLLBACK: Revert optimistic update on error
             const rollbackBalance = currentBalance; // Original balance before optimistic update
             updateWalletBalance(rollbackBalance);
-            
+
             const errorMsg = err.response?.data?.error?.message || 'Top-up failed. Please try again.';
             setError(errorMsg);
             showToast(`❌ ${errorMsg}`, 'error');
@@ -93,10 +93,10 @@ export default function WalletTopupModal({ isOpen, onClose, currentBalance }: Wa
         // ✅ OPTIMISTIC UPDATE: Show new balance immediately before API call
         const optimisticNewBalance = currentBalance + amountNum;
         updateWalletBalance(optimisticNewBalance);
-        
+
         // Close modal immediately for instant feedback
         onClose();
-        
+
         // Show optimistic toast
         showToast(`💰 Adding ₹${amountNum.toFixed(2)} to wallet...`, 'info');
 

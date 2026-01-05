@@ -2,7 +2,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/useAuthStore';
+import { useClerk } from '@clerk/nextjs';
 import { useState } from 'react';
 
 export interface ApiError {
@@ -13,7 +13,7 @@ export interface ApiError {
 
 export function useApiError() {
     const router = useRouter();
-    const { logout } = useAuthStore();
+    const { signOut } = useClerk();
     const [error, setError] = useState<ApiError | null>(null);
 
     const handleError = (error: any): ApiError => {
@@ -28,7 +28,7 @@ export function useApiError() {
         console.error(`[${code}]`, message);
 
         switch (code) {
-            case 'INSUFFICIENT_BALANCE':  // ✅ FIXED
+            case 'INSUFFICIENT_BALANCE':
                 console.warn('💰 Wallet balance too low for this operation');
                 // Dispatch event to show topup modal
                 window.dispatchEvent(
@@ -38,17 +38,16 @@ export function useApiError() {
                 );
                 break;
 
-            case 'VALIDATION_ERROR':  // ✅ FIXED
+            case 'VALIDATION_ERROR':
                 console.error('❌ Form validation failed');
                 // Return field errors
                 setError(apiError);
                 break;
 
             case 'UNAUTHORIZED':
-                console.warn('🔐 Session expired - redirecting to login');
-                // Clear auth and redirect
-                logout();
-                router.push('/auth');
+                console.warn('🔐 Session expired - redirecting to sign-in');
+                // Sign out via Clerk and redirect
+                signOut().then(() => router.push('/sign-in'));
                 break;
 
             case 'FORBIDDEN':
@@ -59,7 +58,7 @@ export function useApiError() {
                 });
                 break;
 
-            case 'NOT_FOUND':  // ✅ FIXED
+            case 'NOT_FOUND':
                 console.error('🔍 Resource not found');
                 setError({
                     ...apiError,
@@ -67,7 +66,7 @@ export function useApiError() {
                 });
                 break;
 
-            case 'INTERNAL_ERROR':  // ✅ FIXED
+            case 'INTERNAL_ERROR':
                 console.error('⚠️ Server error');
                 setError({
                     ...apiError,

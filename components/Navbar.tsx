@@ -3,17 +3,14 @@
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect, useMemo } from 'react';
-import { useAuthStore } from '../stores/useAuthStore';
+import { useUser, useClerk, UserButton } from '@clerk/nextjs';
 import ThemeToggle from './ThemeToggle';
-import UserDropdown from './UserDropdown';
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const token = useAuthStore((s) => s.token);
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
-  const isInitialized = useAuthStore((s) => s.isInitialized);
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Close mobile menu when route changes
@@ -30,10 +27,9 @@ export default function Navbar() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
     setMobileMenuOpen(false);
-    // Redirect to landing page instead of auth
+    await signOut();
     router.push('/');
   };
 
@@ -55,10 +51,22 @@ export default function Navbar() {
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
-  // Don't render navigation links until auth is initialized
-  // Also hide Navbar entirely on auth pages to let the 3D background shine
-  if (!isInitialized || pathname.startsWith('/auth')) {
+  // Hide Navbar on sign-in/sign-up pages
+  if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
     return null;
+  }
+
+  // Wait for Clerk to load
+  if (!isLoaded) {
+    return (
+      <nav className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-gray-200 dark:border-slate-800 sticky top-0 z-40 h-16">
+        <div className="max-w-7xl mx-auto px-4 h-full flex items-center">
+          <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+            ShipMVP
+          </div>
+        </div>
+      </nav>
+    );
   }
 
   return (
@@ -69,14 +77,14 @@ export default function Navbar() {
             {/* Left side - Logo and Navigation */}
             <div className="flex items-center gap-8">
               <Link
-                href={user?.role === 'ADMIN' ? "/admin/invoices" : "/dashboard"}
+                href={isSignedIn ? "/dashboard" : "/"}
                 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
               >
                 ShipMVP
               </Link>
 
               {/* Desktop Navigation Links - Hidden on mobile */}
-              {token && (
+              {isSignedIn && (
                 <div className="hidden lg:flex items-center gap-1">
                   {navLinks.map((link) => (
                     <Link
@@ -90,20 +98,6 @@ export default function Navbar() {
                       {link.label}
                     </Link>
                   ))}
-
-                  {/* Admin Link - Only show for admin users */}
-                  {user?.role === 'ADMIN' && (
-                    <Link
-                      href="/admin/invoices"
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${isActive('/admin')
-                        ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                        : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20'
-                        }`}
-                    >
-                      <span>👑</span>
-                      <span>Admin</span>
-                    </Link>
-                  )}
                 </div>
               )}
             </div>
@@ -115,13 +109,24 @@ export default function Navbar() {
 
               <div className="h-6 w-px bg-gray-200 dark:bg-slate-700 hidden sm:block"></div>
 
-              {/* User Dropdown or Login Button */}
+              {/* User Button or Login */}
               <div className="hidden sm:block">
-                {token ? (
-                  <UserDropdown />
+                {isSignedIn ? (
+                  <UserButton
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        avatarBox: 'w-9 h-9',
+                        userButtonPopoverCard: 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700',
+                        userButtonPopoverActionButton: 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700',
+                        userButtonPopoverActionButtonText: 'text-gray-700 dark:text-gray-300',
+                        userButtonPopoverFooter: 'hidden',
+                      }
+                    }}
+                  />
                 ) : (
                   <Link
-                    href="/auth"
+                    href="/sign-in"
                     className="px-5 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors shadow-lg hover:shadow-blue-500/30"
                   >
                     Login
@@ -177,32 +182,28 @@ export default function Navbar() {
           </div>
 
           {/* User info on mobile */}
-          {user && (
+          {isSignedIn && user && (
             <div className="p-4 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-100 dark:border-slate-800">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md">
-                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                  {user.firstName?.charAt(0).toUpperCase() || user.emailAddresses[0]?.emailAddress.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div>
-                  <div className="text-gray-900 dark:text-white font-medium">{user.name || user.email}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate w-32">{user.email}</div>
+                  <div className="text-gray-900 dark:text-white font-medium">
+                    {user.firstName} {user.lastName}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate w-32">
+                    {user.emailAddresses[0]?.emailAddress}
+                  </div>
                 </div>
               </div>
-              {user.merchantProfile && (
-                <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-700">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Wallet Balance</span>
-                  <span className="text-blue-600 dark:text-blue-400 font-bold">
-                    ₹{user.merchantProfile.walletBalance.toFixed(2)}
-                  </span>
-                </div>
-              )}
             </div>
           )}
 
           {/* Navigation links */}
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-1">
-              {token ? navLinks.map((link) => (
+              {isSignedIn ? navLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -217,7 +218,7 @@ export default function Navbar() {
                 </li>
               )) : (
                 <li className="text-center py-4">
-                  <Link href="/auth" className="block w-full py-3 bg-blue-600 text-white rounded-lg font-bold shadow-lg">
+                  <Link href="/sign-in" className="block w-full py-3 bg-blue-600 text-white rounded-lg font-bold shadow-lg">
                     Login to Continue
                   </Link>
                 </li>
@@ -226,7 +227,7 @@ export default function Navbar() {
           </nav>
 
           {/* Logout button at bottom */}
-          {token && (
+          {isSignedIn && (
             <div className="p-4 border-t border-gray-100 dark:border-slate-800">
               <button
                 onClick={handleLogout}
@@ -244,4 +245,3 @@ export default function Navbar() {
     </>
   );
 }
-
